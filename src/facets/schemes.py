@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, constr, validator
 from typing import List, Any, Optional, Union
 from src.schemes import PyObjectId
 from bson import ObjectId
@@ -45,11 +45,47 @@ class FacetList(BaseModel):
 
 
 class FacetUpdate(BaseModel):
-    name: str
+    name: constr(min_length=1) = Field(...)
     optional: bool
     show_in_filters: bool
-    categories: List[PyObjectId]
+    categories: Union[List[PyObjectId], str]
     values: Optional[List[Any]]
+
+    @validator("categories")
+    def categories_must_be_not_empty(cls, v):
+        if not len(v) > 0 and not v == "*":
+            raise ValueError("Categories must contain at least 1 item")
+        return v
+
+    @validator("values")
+    def values_must_be_not_empty(cls, v, values):
+        if not len(v) > 0:
+            raise ValueError("Values must contain at least 1 item")
+        return v
+
+    class Config:
+        json_encoders = {ObjectId: str}
+
+class FacetCreate(BaseModel):
+    code: constr(min_length=1) = Field(...)
+    name: constr(min_length=1) = Field(...)
+    type: constr(min_length=1) = Field(...)
+    values: Optional[List[Any]]
+    categories: Union[List[PyObjectId], str]
+    optional: bool
+    show_in_filters: bool
+
+    @validator("categories")
+    def categories_must_be_not_empty(cls, v):
+        if not len(v) > 0 and not v == "*":
+            raise ValueError("Categories must contain at least 1 item")
+        return v
+
+    @validator("values")
+    def values_must_be_not_empty(cls, v, values):
+        if values["type"] in ["list_string", "list_integer"] and not len(v) > 0:
+            raise ValueError("Values must contain at least 1 item")
+        return v
 
     class Config:
         json_encoders = {ObjectId: str}

@@ -1,6 +1,12 @@
 import fastapi
 import math
-from .schemes import FacetFilters, Facet, FacetList, FacetUpdate
+from .schemes import (
+    FacetFilters,
+    Facet,
+    FacetList,
+    FacetUpdate,
+    FacetCreate
+)
 from src.schemes import PyObjectId
 from .utils import FacetFiltersHandler
 from . import services
@@ -44,11 +50,16 @@ async def facet_detail(facet_id: PyObjectId):
 
 @router.put("/{facet_id}")
 async def facet_update(facet_id: PyObjectId, data_to_update: FacetUpdate):
-    modified_document = await services.update_facet(facet_id, data_to_update.dict())
-    if modified_document:
-        return
+    """Updates facet"""
+    await services.update_facet(facet_id, data_to_update.dict())
 
-    print(data_to_update.dict())
 
-    return fastapi.responses.JSONResponse(status_code=400, content={"error": "Facet wasn't updated"})
+@router.post("/", status_code=fastapi.status.HTTP_201_CREATED)
+async def facet_create(data: FacetCreate):
+    """Create facet with data specified by the user"""
+    await services.create_facet(data.dict())
 
+
+@router.delete("/{facet_id}", status_code=fastapi.status.HTTP_204_NO_CONTENT)
+async def facet_delete(facet_id: PyObjectId):
+    await services.delete_facet(facet_id)

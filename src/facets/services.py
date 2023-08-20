@@ -42,6 +42,11 @@ async def get_facet_by_id(facet_id):
 
 
 async def update_facet(facet_id: PyObjectId, data_to_update: dict):
-    updated_facet = await db.facets.update_one({"_id": facet_id},{"$set": data_to_update})
-    if updated_facet.modified_count == 1:
-        return True
+    await db.facets.update_one({"_id": facet_id},{"$set": data_to_update})
+
+
+async def create_facet(data: dict):
+    await db.facets.insert_one(data)
+
+async def delete_facet(facet_id: PyObjectId):
+    await db.facets.delete_one({"_id": facet_id})
