@@ -8,6 +8,7 @@ from fastapi.encoders import jsonable_encoder
 from src.facets.router import router as facet_router
 from src.categories.router import router as category_router
 from src.facet_types.router import router as facet_type_router
+from src.variaton_themes.router import router as variation_theme_router
 
 origins = [
     "http://localhost:3001",
@@ -27,6 +28,7 @@ app.add_middleware(
 app.include_router(facet_router)
 app.include_router(category_router)
 app.include_router(facet_type_router)
+app.include_router(variation_theme_router)
 
 
 @app.exception_handler(RequestValidationError)
