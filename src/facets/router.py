@@ -16,6 +16,10 @@ router = fastapi.APIRouter(
     tags=["Facets"]
 )
 
+@router.get("/for-choices")
+async def facet_list_for_choices():
+    facets = await services.get_facets_for_choices()
+    return facets
 
 @router.get("/", response_model=FacetList, response_model_exclude_none=True)
 async def facet_list(filters: FacetFilters = fastapi.Depends(FacetFilters), page: int = fastapi.Query(1, ge=1),

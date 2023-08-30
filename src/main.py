@@ -37,7 +37,7 @@ async def custom_form_validation_error(request, exc):
     for pydantic_error in exc.errors():
         loc, msg = pydantic_error["loc"], pydantic_error["msg"].capitalize()
         filtered_loc = loc[1:] if loc[0] in ("body", "query", "path") else loc
-        field_string = ".".join(filtered_loc)  # nested fields with dot-notation
+        field_string = ".".join(map(str, filtered_loc))  # nested fields with dot-notation
         reformatted_message[field_string].append(msg)
 
     return JSONResponse(

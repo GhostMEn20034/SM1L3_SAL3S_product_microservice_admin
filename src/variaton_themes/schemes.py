@@ -1,12 +1,25 @@
 from bson import ObjectId
 from src.schemes import PyObjectId
 from typing import List, Union
-from pydantic import BaseModel, Field ,constr
+from pydantic import BaseModel, Field ,constr, validator
 
 
 class VariationThemeFilter(BaseModel):
-    name: constr(min_length=1) = Field(...)
+    name: str
     field_codes: List[str]
+
+    @validator("name")
+    def name_must_not_be_empty(cls, v):
+        if len(v) < 1:
+            raise ValueError("Filter name must contain at least 1 character")
+
+        return v
+
+    @validator("field_codes")
+    def field_codes_must_not_be_empty(cls, v):
+        if len(v) < 1:
+            raise ValueError("Field codes must contain at least 1 item")
+        return v
 
 
 class VariationTheme(BaseModel):
@@ -34,3 +47,21 @@ class VariationThemeResult(BaseModel):
         allow_population_by_field_name = True
         arbitrary_types_allowed = True  # required for the _id
         json_encoders = {ObjectId: str}
+
+
+class VariationThemeUpdate(BaseModel):
+    filters: List[VariationThemeFilter]
+    categories: Union[List[PyObjectId], str]
+
+
+class VariationThemeCreate(BaseModel):
+    name: str
+    filters: List[VariationThemeFilter]
+    categories: Union[List[PyObjectId], str]
+
+    @validator("name")
+    def name_must_not_be_empty(cls, v):
+        if len(v) < 1:
+            raise ValueError("Variation theme name must contain at least 1 character")
+
+        return v

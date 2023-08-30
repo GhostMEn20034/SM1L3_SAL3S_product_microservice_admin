@@ -1,6 +1,11 @@
 from src.database import db
 from src.schemes import PyObjectId
 
+
+async def get_facets_for_choices():
+    facets = await db.facets.find({ }, {"name": 1, "code": 1, "_id": 0}).to_list(length=None)
+    return facets
+
 async def get_facets(filters: dict, page: int, page_size: int):
     pipeline = [
         {
