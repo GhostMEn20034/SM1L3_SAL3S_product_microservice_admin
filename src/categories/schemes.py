@@ -1,14 +1,62 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from src.schemes import PyObjectId
 from bson import ObjectId
-from typing import Union
+from typing import Union, List, Optional
 
-class Category(BaseModel):
+class CategoryForChoices(BaseModel):
+    """
+    Category model for selection in forms
+    """
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     name: str
-    parent: Union[PyObjectId, None]
 
     class Config:
         allow_population_by_field_name = True
         arbitrary_types_allowed = True  # required for the _id
         json_encoders = {ObjectId: str}
+
+
+class Category(BaseModel):
+    """
+    Category model
+    """
+    id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
+    name: str
+    level: int
+    tree_id: PyObjectId
+    parent_id: Union[PyObjectId, None]
+
+    class Config:
+        allow_population_by_field_name = True
+        arbitrary_types_allowed = True  # required for the _id
+        json_encoders = {ObjectId: str}
+
+class CategoryAdminPanelList(BaseModel):
+    result: List[Category]
+    page_count: int
+
+    class Config:
+        allow_population_by_field_name = True
+        arbitrary_types_allowed = True  # required for the _id
+        json_encoders = {ObjectId: str}
+
+
+class CategoryForm(BaseModel):
+    """Category model for forms"""
+    name: str
+    parent_id: Optional[PyObjectId]
+
+    @validator("name")
+    def name_must_not_be_empty(cls, v):
+        if len(v) < 1:
+            raise ValueError("Category name must contain at least 1 character")
+
+        return v
+
+
+class CategoryUpdate(CategoryForm):
+    pass
+
+
+class CategoryCreate(CategoryForm):
+    pass
