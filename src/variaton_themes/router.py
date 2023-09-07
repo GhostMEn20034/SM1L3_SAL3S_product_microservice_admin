@@ -38,7 +38,6 @@ async def variation_theme_detail(variation_theme_id: PyObjectId):
 @router.put("/{variation_theme_id}", status_code=fastapi.status.HTTP_204_NO_CONTENT)
 async def variation_theme_update(variation_theme_id: PyObjectId, data: schemes.VariationThemeUpdate):
     variation_theme_data = data.dict()
-    print(variation_theme_data)
     await services.update_variation_theme(variation_theme_id, variation_theme_data)
 
 
@@ -53,7 +52,5 @@ async def variation_theme_create(data: schemes.VariationThemeCreate):
 
 @router.delete("/{variation_theme_id}", status_code=fastapi.status.HTTP_204_NO_CONTENT)
 async def variation_theme_delete(variation_theme_id: PyObjectId):
-    deleted_variation_theme = await services.delete_variation_theme(variation_theme_id)
-    if not deleted_variation_theme:
-        raise fastapi.exceptions.HTTPException(status_code=fastapi.status.HTTP_400_BAD_REQUEST,
-                                                detail="Variation theme not deleted")
+    await services.delete_variation_theme(variation_theme_id)
+

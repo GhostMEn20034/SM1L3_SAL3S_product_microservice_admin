@@ -6,7 +6,7 @@ class CategoryTree:
     def get_roots(self):
         return [c for c in self.categories if c["parent"] is None]
 
-    def get_nodes(self, tree_id):
+    def get_trees(self, tree_id):
         # Filter the categories list by matching the tree_id
         nodes = [c for c in self.categories if c["tree_id"] == tree_id]
         return sorted(nodes, key=lambda c: c["level"])

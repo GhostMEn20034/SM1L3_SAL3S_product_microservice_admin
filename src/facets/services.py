@@ -1,5 +1,6 @@
 from src.database import db
 from src.schemes import PyObjectId
+from fastapi.exceptions import HTTPException
 
 
 async def get_facets_for_choices():
@@ -47,11 +48,24 @@ async def get_facet_by_id(facet_id):
 
 
 async def update_facet(facet_id: PyObjectId, data_to_update: dict):
+    facet = await db.facets.find_one({"_id": facet_id}, {"_id": 1})
+    if not facet:
+        raise HTTPException(status_code=404, detail="Facet not found")
+
     await db.facets.update_one({"_id": facet_id},{"$set": data_to_update})
 
 
 async def create_facet(data: dict):
-    await db.facets.insert_one(data)
+    created_facet = await db.facets.insert_one(data)
+    if created_facet.inserted_id:
+        return True
+
+    return False
 
 async def delete_facet(facet_id: PyObjectId):
+
+    facet = await db.facets.find_one({"_id": facet_id}, {"_id": 1})
+    if not facet:
+        raise HTTPException(status_code=404, detail="Facet not found")
+
     await db.facets.delete_one({"_id": facet_id})

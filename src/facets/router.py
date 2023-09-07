@@ -61,7 +61,9 @@ async def facet_update(facet_id: PyObjectId, data_to_update: FacetUpdate):
 @router.post("/", status_code=fastapi.status.HTTP_201_CREATED)
 async def facet_create(data: FacetCreate):
     """Create facet with data specified by the user"""
-    await services.create_facet(data.dict())
+    created_facet = await services.create_facet(data.dict())
+    if not created_facet:
+        raise fastapi.exceptions.HTTPException(status_code=400, detail="Facet not created")
 
 
 @router.delete("/{facet_id}", status_code=fastapi.status.HTTP_204_NO_CONTENT)

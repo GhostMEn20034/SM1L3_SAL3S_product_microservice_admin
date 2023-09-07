@@ -1,5 +1,6 @@
 from src.database import db
 from src.schemes import PyObjectId
+from fastapi.exceptions import HTTPException
 
 async def get_variation_themes(page: int, page_size: int):
     pipeline = [
@@ -36,6 +37,10 @@ async def get_variation_theme_by_id(variation_theme_id: PyObjectId):
 
 
 async def update_variation_theme(variation_theme_id: PyObjectId, data: dict):
+    variation_theme = await db.variation_themes.find_one({"_id": variation_theme_id}, {"_id": 1})
+    if variation_theme:
+        raise HTTPException(status_code=404, detail="Variation theme not found")
+
     await db.variation_themes.update_one({"_id": variation_theme_id}, {"$set": data})
 
 
@@ -48,8 +53,8 @@ async def create_variation_theme(data: dict):
 
 
 async def delete_variation_theme(variation_theme_id: PyObjectId):
-    deleted_variation_theme = await db.variation_themes.delete_one({"_id": variation_theme_id})
-    if deleted_variation_theme.deleted_count == 1:
-        return True
+    variation_theme = await db.variation_themes.find_one({"_id": variation_theme_id}, {"_id": 1})
+    if variation_theme:
+        raise HTTPException(status_code=404, detail="Variation theme not found")
 
-    return False
+    await db.variation_themes.delete_one({"_id": variation_theme_id})
