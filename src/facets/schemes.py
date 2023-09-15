@@ -12,9 +12,9 @@ class Facet(BaseModel):
     type: str
     values: Optional[List[Any]]
     categories: Optional[Union[List[Any], str]]
+    units: Optional[List[str]]
     optional: Optional[bool]
     show_in_filters: Optional[bool]
-
 
     class Config:
         allow_population_by_field_name = True
@@ -49,6 +49,7 @@ class FacetUpdate(BaseModel):
     optional: bool
     show_in_filters: bool
     categories: Union[List[PyObjectId], str]
+    units: Optional[List[str]]
     values: Optional[List[Any]]
 
     @validator("categories")
@@ -58,8 +59,8 @@ class FacetUpdate(BaseModel):
         return v
 
     @validator("values")
-    def values_must_be_not_empty(cls, v, values):
-        if not len(v) > 0:
+    def values_must_be_not_empty(cls, v):
+        if v is not None and not len(v) > 0:
             raise ValueError("Values must contain at least 1 item")
         return v
 
@@ -72,6 +73,7 @@ class FacetCreate(BaseModel):
     type: constr(min_length=1) = Field(...)
     values: Optional[List[Any]]
     categories: Union[List[PyObjectId], str]
+    units: Optional[List[str]]
     optional: bool
     show_in_filters: bool
 
@@ -83,7 +85,7 @@ class FacetCreate(BaseModel):
 
     @validator("values")
     def values_must_be_not_empty(cls, v, values):
-        if values["type"] in ["list_string", "list_integer"] and not len(v) > 0:
+        if values["type"] == "list" and not len(v) > 0:
             raise ValueError("Values must contain at least 1 item")
         return v
 

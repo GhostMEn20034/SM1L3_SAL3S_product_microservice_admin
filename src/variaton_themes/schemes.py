@@ -1,6 +1,6 @@
 from bson import ObjectId
 from src.schemes import PyObjectId
-from typing import List, Union
+from typing import List, Union, Optional
 from pydantic import BaseModel, Field ,constr, validator
 
 
@@ -26,7 +26,7 @@ class VariationTheme(BaseModel):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     name: constr(min_length=1) = Field(...)
     filters: List[VariationThemeFilter]
-    categories: Union[List[PyObjectId], str]
+    categories: Optional[Union[List[PyObjectId], str]]
 
     class Config:
         allow_population_by_field_name = True
@@ -53,6 +53,13 @@ class VariationThemeUpdate(BaseModel):
     filters: List[VariationThemeFilter]
     categories: Union[List[PyObjectId], str]
 
+    @validator("categories")
+    def categories_validator(cls, v):
+        if len(v) < 1:
+            return "*"
+
+        return v
+
 
 class VariationThemeCreate(BaseModel):
     name: str
@@ -63,5 +70,12 @@ class VariationThemeCreate(BaseModel):
     def name_must_not_be_empty(cls, v):
         if len(v) < 1:
             raise ValueError("Variation theme name must contain at least 1 character")
+
+        return v
+
+    @validator("categories")
+    def categories_validator(cls, v):
+        if len(v) < 1:
+            return "*"
 
         return v

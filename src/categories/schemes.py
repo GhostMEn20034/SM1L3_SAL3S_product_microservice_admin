@@ -1,3 +1,4 @@
+from __future__ import annotations
 from pydantic import BaseModel, Field, validator
 from src.schemes import PyObjectId
 from bson import ObjectId
@@ -60,3 +61,12 @@ class CategoryUpdate(CategoryForm):
 
 class CategoryCreate(CategoryForm):
     pass
+
+
+class CategoryListPublic(Category):
+    children: List[CategoryListPublic]
+
+    class Config:
+        allow_population_by_field_name = True
+        arbitrary_types_allowed = True  # required for the _id
+        json_encoders = {ObjectId: str}

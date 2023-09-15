@@ -4,7 +4,7 @@ class CategoryTree:
         self.categories = categories
 
     def get_roots(self):
-        return [c for c in self.categories if c["parent"] is None]
+        return [c for c in self.categories if c["parent_id"] is None]
 
     def get_trees(self, tree_id):
         # Filter the categories list by matching the tree_id
@@ -24,7 +24,7 @@ class CategoryTree:
     # A method that recursively populates the children field of a given category
     def _populate_children(self, category):
         # Find the categories that have the node id as their parent
-        children = [c for c in self.categories if c["parent"] == category["_id"]]
+        children = [c for c in self.categories if c["parent_id"] == category["_id"]]
         # For each child category, populate its children field by calling the method
         # recursively
         for child in children:

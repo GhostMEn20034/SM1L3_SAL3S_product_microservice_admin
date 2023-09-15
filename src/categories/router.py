@@ -33,6 +33,12 @@ async def category_list_for_admin_panel(page: int = fastapi.Query(1, ge=1),
     return result
 
 
+@router.get("/", response_model=List[schemes.CategoryListPublic])
+async def category_list_for_public_access():
+    categories = await services.get_categories_for_public_access()
+    return categories
+
+
 @router.get("/{category_id}", response_model=schemes.Category)
 async def category_detail(category_id: PyObjectId):
     category = await services.get_category_by_id(category_id)

@@ -38,7 +38,7 @@ async def get_variation_theme_by_id(variation_theme_id: PyObjectId):
 
 async def update_variation_theme(variation_theme_id: PyObjectId, data: dict):
     variation_theme = await db.variation_themes.find_one({"_id": variation_theme_id}, {"_id": 1})
-    if variation_theme:
+    if not variation_theme:
         raise HTTPException(status_code=404, detail="Variation theme not found")
 
     await db.variation_themes.update_one({"_id": variation_theme_id}, {"$set": data})

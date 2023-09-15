@@ -22,7 +22,7 @@ async def facet_list_for_choices():
     return facets
 
 @router.get("/", response_model=FacetList, response_model_exclude_none=True)
-async def facet_list(filters: FacetFilters = fastapi.Depends(FacetFilters), page: int = fastapi.Query(1, ge=1),
+async def facet_list(filters: FacetFilters = fastapi.Depends(FacetFilters), page: int = fastapi.Query(1, ge=1,),
                      page_size: int = fastapi.Query(15, ge=0)):
     """
     Returns list of facets
@@ -41,7 +41,7 @@ async def facet_list(filters: FacetFilters = fastapi.Depends(FacetFilters), page
     return result
 
 
-@router.get("/{facet_id}", response_model=Facet, response_model_exclude_none=True)
+@router.get("/{facet_id}", response_model=Facet)
 async def facet_detail(facet_id: PyObjectId):
     """Returns facet with specified id"""
     facet = await services.get_facet_by_id(facet_id)

@@ -3,7 +3,7 @@ from bson.objectid import ObjectId
 from src.schemes import PyObjectId
 from typing import Union
 from fastapi.exceptions import HTTPException
-
+from .utils import CategoryTree
 
 async def get_categories_for_choices():
     categories = await db.categories.find({}, {"name": 1}).to_list(length=None)
@@ -106,3 +106,12 @@ async def delete_category(category_id: PyObjectId):
                             detail="Before deleting a category, make sure that the category has no children")
 
     await db.categories.delete_one({"_id": category["_id"]})
+
+
+
+async def get_categories_for_public_access():
+    category_list = await db.categories.find({}).to_list(length=None)
+
+    category_tree = CategoryTree(category_list)
+
+    return category_tree.get_whole_tree()
