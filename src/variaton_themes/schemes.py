@@ -1,6 +1,6 @@
 from bson import ObjectId
 from src.schemes import PyObjectId
-from typing import List, Union, Optional
+from typing import List, Union
 from pydantic import BaseModel, Field ,constr, validator
 
 
@@ -26,7 +26,7 @@ class VariationTheme(BaseModel):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     name: constr(min_length=1) = Field(...)
     filters: List[VariationThemeFilter]
-    categories: Optional[Union[List[PyObjectId], str]]
+    categories: Union[List[PyObjectId], str]
 
     class Config:
         allow_population_by_field_name = True

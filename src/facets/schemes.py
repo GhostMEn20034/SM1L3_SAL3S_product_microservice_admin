@@ -5,16 +5,24 @@ from bson import ObjectId
 import fastapi
 
 
-class Facet(BaseModel):
+class FacetBase(BaseModel):
+    """
+    Model that represents base facet fields
+    used in the detail facet representation and in the list representation
+    """
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     code: str
     name: str
     type: str
+    optional: bool
+    show_in_filters: bool
+
+
+class Facet(FacetBase):
+    """Detail facet representation"""
     values: Optional[List[Any]]
-    categories: Optional[Union[List[Any], str]]
+    categories: Union[List[PyObjectId], str]
     units: Optional[List[str]]
-    optional: Optional[bool]
-    show_in_filters: Optional[bool]
 
     class Config:
         allow_population_by_field_name = True
@@ -23,6 +31,7 @@ class Facet(BaseModel):
 
 
 class FacetFilters(BaseModel):
+    """Fields by which facet can be filtered"""
     categories: Optional[List[PyObjectId]] = Field(fastapi.Query([]))
     type: Optional[List[str]] = Field(fastapi.Query([]))
     optional: bool = None
@@ -35,7 +44,8 @@ class FacetFilters(BaseModel):
 
 
 class FacetList(BaseModel):
-    result: List[Facet]
+    """Model represents list of facets and shows page count"""
+    result: List[FacetBase]
     page_count: int
 
     class Config:
@@ -45,6 +55,7 @@ class FacetList(BaseModel):
 
 
 class FacetUpdate(BaseModel):
+    """Model represents updatable facet fields"""
     name: constr(min_length=1) = Field(...)
     optional: bool
     show_in_filters: bool
@@ -68,6 +79,7 @@ class FacetUpdate(BaseModel):
         json_encoders = {ObjectId: str}
 
 class FacetCreate(BaseModel):
+    """Model represents fields required to create a facet"""
     code: constr(min_length=1) = Field(...)
     name: constr(min_length=1) = Field(...)
     type: constr(min_length=1) = Field(...)

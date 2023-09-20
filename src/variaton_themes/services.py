@@ -54,7 +54,7 @@ async def create_variation_theme(data: dict):
 
 async def delete_variation_theme(variation_theme_id: PyObjectId):
     variation_theme = await db.variation_themes.find_one({"_id": variation_theme_id}, {"_id": 1})
-    if variation_theme:
+    if not variation_theme:
         raise HTTPException(status_code=404, detail="Variation theme not found")
 
     await db.variation_themes.delete_one({"_id": variation_theme_id})
