@@ -6,7 +6,7 @@ from fastapi.exceptions import HTTPException
 from .utils import CategoryTree
 
 async def get_categories_for_choices():
-    categories = await db.categories.find({}, {"name": 1}).to_list(length=None)
+    categories = await db.categories.find({}, {"name": 1, "groups": 1}).to_list(length=None)
     return categories
 
 
@@ -110,7 +110,7 @@ async def delete_category(category_id: PyObjectId):
 
 
 async def get_categories_for_public_access():
-    category_list = await db.categories.find({}).to_list(length=None)
+    category_list = await db.categories.find({}, {"groups": 0}).to_list(length=None)
 
     category_tree = CategoryTree(category_list)
 

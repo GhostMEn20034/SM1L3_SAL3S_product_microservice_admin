@@ -70,9 +70,13 @@ class FacetUpdate(BaseModel):
         return v
 
     @validator("values")
-    def values_must_be_not_empty(cls, v):
-        if v is not None and not len(v) > 0:
+    def values_must_be_not_empty(cls, v, values):
+        if values["type"] != "string" and v is not None:
+            raise ValueError("Value list allowed only for string type")
+
+        if v is not None and len(v) < 1:
             raise ValueError("Values must contain at least 1 item")
+
         return v
 
     class Config:
@@ -97,8 +101,12 @@ class FacetCreate(BaseModel):
 
     @validator("values")
     def values_must_be_not_empty(cls, v, values):
-        if values["type"] == "list" and not len(v) > 0:
+        if values["type"] != "string" and v is not None:
+            raise ValueError("Value list allowed only for string type")
+
+        if v is not None and len(v) < 1:
             raise ValueError("Values must contain at least 1 item")
+
         return v
 
     class Config:

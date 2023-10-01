@@ -10,6 +10,7 @@ class CategoryForChoices(BaseModel):
     """
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     name: str
+    groups: Optional[List[str]]
 
     class Config:
         allow_population_by_field_name = True
@@ -26,6 +27,7 @@ class Category(BaseModel):
     level: int
     tree_id: PyObjectId
     parent_id: Union[PyObjectId, None]
+    groups: Optional[List[str]]
 
     class Config:
         allow_population_by_field_name = True
@@ -46,6 +48,7 @@ class CategoryForm(BaseModel):
     """Category model for forms"""
     name: str
     parent_id: Optional[PyObjectId]
+    groups: Optional[List[str]]
 
     @validator("name")
     def name_must_not_be_empty(cls, v):

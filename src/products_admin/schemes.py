@@ -1,7 +1,10 @@
 from pydantic import BaseModel
 from typing import List, Union, Optional
+
+from src.categories.schemes import CategoryForChoices
 from src.facets.schemes import Facet
 from src.variaton_themes.schemes import VariationTheme
+from src.facet_types.schemes import FacetType
 from bson import ObjectId
 from src.schemes import PyObjectId
 
@@ -17,6 +20,8 @@ class ProductCreateForm(BaseModel):
     """Model that contains facets and variation themes to create a product"""
     facets: List[FacetCreateForm]
     variation_themes: List[VariationThemeCreateForm]
+    facet_types: List[FacetType]
+    category: CategoryForChoices
 
     class Config:
         allow_population_by_field_name = True
