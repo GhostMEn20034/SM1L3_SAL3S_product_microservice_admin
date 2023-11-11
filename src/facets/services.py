@@ -8,6 +8,12 @@ async def get_facets_for_choices():
     return facets
 
 async def get_facets(filters: dict, page: int, page_size: int):
+    """
+    Returns specified number of facets and total facet count,
+    :param filters - dict with parameters used to filter facets
+    :param page - page number
+    :param page_size - number of facets to return
+    """
     pipeline = [
         {
             "$match": {
@@ -48,10 +54,17 @@ async def get_facet_by_id(facet_id):
 
 
 async def update_facet(facet_id: PyObjectId, data_to_update: dict):
+    """
+    Updates facet with specified id,
+    :param facet_id - facet identifier,
+    :param data_to_update - new facet properties.
+    """
     facet = await db.facets.find_one({"_id": facet_id}, {"_id": 1})
+    # if there's no facet with the specified id raise HTTP 404 Not Found
     if not facet:
         raise HTTPException(status_code=404, detail="Facet not found")
 
+    # Update facet
     await db.facets.update_one({"_id": facet_id},{"$set": data_to_update})
 
 
@@ -63,9 +76,13 @@ async def create_facet(data: dict):
     return False
 
 async def delete_facet(facet_id: PyObjectId):
-
+    """
+    Deletes facet with specified id
+    """
     facet = await db.facets.find_one({"_id": facet_id}, {"_id": 1})
+    # if there's no facet with such id, raise HTTP 404 Not Found
     if not facet:
         raise HTTPException(status_code=404, detail="Facet not found")
 
+    # If facet was found, then delete facet
     await db.facets.delete_one({"_id": facet_id})
