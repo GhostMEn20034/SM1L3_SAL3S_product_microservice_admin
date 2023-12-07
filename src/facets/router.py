@@ -12,7 +12,7 @@ from .utils import FacetFiltersHandler
 from . import services
 
 router = fastapi.APIRouter(
-    prefix='/facets',
+    prefix='/admin/facets',
     tags=["Facets"]
 )
 
@@ -32,11 +32,11 @@ async def facet_list(filters: FacetFilters = fastapi.Depends(FacetFilters), page
 
     facets = await services.get_facets(generated_filters, page, page_size)
 
-    page_count = facets[0].get("total_count")[0].get("total")
+    facets_count = facets[0].get("total_count")[0].get("total")
 
     result = {
         "result": facets[0].get("result"),
-        "page_count": math.ceil(page_count / page_size)
+        "page_count": math.ceil(facets_count / page_size)
     }
     return result
 

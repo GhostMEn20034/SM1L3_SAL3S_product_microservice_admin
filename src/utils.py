@@ -31,7 +31,7 @@ async def validate_images(images: Union[str, List[str]], many: bool = False):
         file_type = image.split(",")[0].split(";")[0]
         # if file_type is not data:image/jpeg
         if file_type != ALLOWED_IMAGE_TYPE:
-            image_errors.append("only image/jpeg type allowed")
+            image_errors.append("Only image/jpeg type allowed")
 
         # get the file size in megabytes
         file_size = round(len(decoded_image) / 1024 ** 2, 2)

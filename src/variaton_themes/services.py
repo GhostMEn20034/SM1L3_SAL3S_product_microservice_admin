@@ -57,4 +57,13 @@ async def delete_variation_theme(variation_theme_id: PyObjectId):
     if not variation_theme:
         raise HTTPException(status_code=404, detail="Variation theme not found")
 
+    products = await db.products.find({"variation_theme": variation_theme_id}, {"_id": 1}).to_list(length=None)
+    if products:
+        raise HTTPException(
+            status_code=400,
+            detail="Variation theme cannot be deleted "
+                   "since there are products with variation theme, which you want to delete"
+        )
+
+
     await db.variation_themes.delete_one({"_id": variation_theme_id})

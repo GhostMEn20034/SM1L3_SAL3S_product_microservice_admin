@@ -1,7 +1,10 @@
-from pydantic import BaseModel, validator
+from __future__ import annotations
+
+from decimal import Decimal
+from pydantic import BaseModel, validator, Field, condecimal, constr
 from typing import List, Union, Optional
 
-from src.categories.schemes import CategoryForChoices
+from src.categories_admin.schemes import CategoryForChoices
 from src.facets.schemes import Facet
 from src.variaton_themes.schemes import VariationTheme
 from src.facet_types.schemes import FacetType
@@ -99,4 +102,35 @@ class CreateProductResponse(BaseModel):
     class Config:
         allow_population_by_field_name = True
         arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}
+
+
+class ProductAdmin(BaseModel):
+    """
+    Product model for admin panel. Used in the product list model
+    """
+    id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
+    name: constr(min_length=1)
+    price: condecimal(decimal_places=2, ge=Decimal(0))
+    for_sale: bool
+    parent: bool
+    variations: Optional[List[ProductAdmin]]
+
+    class Config:
+        allow_population_by_field_name = True
+        arbitrary_types_allowed = True  # required for the _id
+        json_encoders = {ObjectId: str}
+
+
+class ProductListResponse(BaseModel):
+    """
+    Response model that returns list of products and other information such as item count, page count etc.
+    """
+    products: List[ProductAdmin]
+    page_count: int
+    items_count: int
+
+    class Config:
+        allow_population_by_field_name = True
+        arbitrary_types_allowed = True  # required for the _id
         json_encoders = {ObjectId: str}

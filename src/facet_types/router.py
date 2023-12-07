@@ -4,7 +4,7 @@ from .schemes import FacetType
 from typing import List
 
 router = fastapi.APIRouter(
-    prefix='/facet-types',
+    prefix='/admin/facet-types',
     tags=["Facet types"]
 )
 

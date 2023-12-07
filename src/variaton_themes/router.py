@@ -5,7 +5,7 @@ from . import schemes
 from src.schemes import PyObjectId
 
 router = fastapi.APIRouter(
-    prefix='/variation-themes',
+    prefix='/admin/variation-themes',
     tags=['Variation themes']
 )
 

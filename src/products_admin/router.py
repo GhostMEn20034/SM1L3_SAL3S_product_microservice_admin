@@ -1,7 +1,7 @@
 import fastapi
 from fastapi import Body, BackgroundTasks
 from src.schemes import PyObjectId
-from .services import create_product_logic
+from .services import create_product_logic, get_products
 from . import schemes
 
 
@@ -19,3 +19,7 @@ async def product_create_form(category_id: PyObjectId):
 @router.post("/create", status_code=fastapi.status.HTTP_201_CREATED, response_model=schemes.CreateProductResponse)
 async def product_create(background_tasks: BackgroundTasks, product: schemes.CreateProduct = Body(...)):
     return await create_product_logic.create_product(product, background_tasks)
+
+@router.get("/", response_model=schemes.ProductListResponse)
+async def products_list(page: int = fastapi.Query(1, ge=1,), page_size: int = fastapi.Query(15, ge=0)):
+    return await get_products.get_product_list(page, page_size)

@@ -9,7 +9,7 @@ from src.schemes import PyObjectId
 class BaseAttrs(BaseModel):
     """Represents product base attributes"""
     name: constr(min_length=1) = Field(...)
-    price: condecimal(max_digits=9, decimal_places=2, ge=Decimal(0))
+    price: condecimal(decimal_places=2, ge=Decimal(0))
     # Decimal number that determines discount percentage.
     # For example 0.25 means 25% discount
     discount_rate: Optional[condecimal(max_digits=3, decimal_places=2, le=Decimal(1))]

@@ -24,7 +24,7 @@ class AttrsHandler:
 
         :return: validated list of attributes and errors, if any.
         """
-        errors = [] # list of attribute errors
+        errors = {} # list of attribute errors
         attrs_to_delete = [] # list of attribute indexes to remove
 
         def append_error_or_delete_attr(attr: dict, message: str, attr_index: int):
@@ -37,9 +37,9 @@ class AttrsHandler:
             :param attr_index: attribute index
             """
             if not attr.get("optional") or not del_optional_invalid_attrs:
-                errors.append(
-                    {"error": f"{attr.get('name')} {message}", "code": attr.get("code")}
-                )
+                error_msg = f"{attr.get('name')} {message}"
+
+                errors[attr.get("code")] = error_msg
             else:
                 attrs_to_delete.append(attr_index)
 
@@ -53,8 +53,8 @@ class AttrsHandler:
                         append_error_or_delete_attr(attr, "must have at least 1 symbol", index)
 
                 case "decimal" | "integer":
-                    # If attr value is not int or float or decimal or there's no attr value
-                    if not isinstance(attr.get("value"), (int, float, Decimal)) or not attr.get("value"):
+                    # If attr value is not int or float or decimal
+                    if not isinstance(attr.get("value"), (int, float, Decimal)):
                         # if attr is optional, then remove attr from an array, otherwise add error to the list of errors
                         append_error_or_delete_attr(attr, "must be integer or decimal number", index)
 

@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from src.facets.router import router as facet_router
-from src.categories.router import router as category_router
+from src.categories_admin.router import router as category_router
 from src.facet_types.router import router as facet_type_router
 from src.variaton_themes.router import router as variation_theme_router
 from src.products_admin.router import router as product_admin_router
@@ -45,7 +45,7 @@ async def custom_form_validation_error(request, exc):
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
         content=jsonable_encoder(
-            {"detail": "Invalid request", "errors": reformatted_message}
+            {"detail": "Invalid request", "errors": reformatted_message, "base_errors": True}
         ),
     )
 
