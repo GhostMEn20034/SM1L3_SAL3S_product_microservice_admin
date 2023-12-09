@@ -7,7 +7,7 @@ from src.products_admin.services.product_validation import (
 )
 from src.schemes import PyObjectId
 
-from src.products_admin.schemes import CreateProduct
+from src.products_admin.schemes.create import CreateProduct
 from src.products_admin.utils import AttrsHandler
 from src.products_admin.services.insert_products import insert_product_to_db
 
