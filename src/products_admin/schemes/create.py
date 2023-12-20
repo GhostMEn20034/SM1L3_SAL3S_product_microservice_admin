@@ -46,6 +46,8 @@ class CreateProduct(BaseModel):
     images: Optional[Images]
     # Determines whether product variations has the same images
     same_images: bool
+    # Determines whether product's attributes can be used in filters
+    is_filterable: bool
     # used to define differences between variations (Uses only if product has variations)
     variation_theme: Optional[PyObjectId]
     # List of product variations

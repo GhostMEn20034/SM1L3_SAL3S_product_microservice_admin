@@ -75,6 +75,7 @@ class ProductDetailResponse(BaseModel):
     facets: Optional[List[Facet]]
     variation_theme: Optional[Dict]
     category: CategoryInProduct
+    facet_types: List[Dict]
 
     class Config:
         allow_population_by_field_name = True

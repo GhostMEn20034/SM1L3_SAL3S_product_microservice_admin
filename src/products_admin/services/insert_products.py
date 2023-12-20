@@ -1,11 +1,11 @@
 from typing import List, Optional, Tuple
 from fastapi import BackgroundTasks
+import multiprocessing as mp
 
 from src.database import db, client
 from src.schemes import PyObjectId
-from src.services.upload_images import upload_imgs_single_prod, upload_imgs_many_prods, update_image_links
-from src.settings import BUCKET_BASE_URL
-from src.products_admin.utils import remove_parent_attrs
+from src.products_admin.utils import remove_product_attrs
+from .upload_images import upload_photos_single_product, upload_product_photos
 
 
 async def insert_product(product_data: dict, session=None) -> PyObjectId:
@@ -30,6 +30,7 @@ async def insert_product(product_data: dict, session=None) -> PyObjectId:
         "for_sale": product_data.get("for_sale"), # is product for sale
         "same_images": product_data.get("same_images"), # Do parent product and product variations have the same images
         "variation_theme":  product_data.get("variation_theme"),  # variation theme id
+        "is_filterable": product_data.get("is_filterable"), # Are product's attributes can be used in filters?
         "category": product_data.get("category"), # product category
         "attrs":  product_data.get("attrs", []), # main attributes
         "extra_attrs": extra_attrs, # extra attributes
@@ -74,6 +75,7 @@ async def insert_variations(product_data: dict,
                 "parent_id": parent_id, # id of parent (For parent product or product without children value is None)
                 "for_sale": product_data.get("for_sale"), # is product for sale
                 "same_images": same_images,
+                "is_filterable": product_data.get("is_filterable"),  # Are product's attributes can be used in filters?
                 "variation_theme": product_data.get("variation_theme"), # variation theme id
                 "category": product_data.get("category"), # product category
                 "attrs": attrs + variation_attrs,  # concatenate parent attributes and variation attributes
@@ -108,13 +110,12 @@ async def insert_variations(product_data: dict,
     return None ,inserted_ids
 
 
-async def insert_product_to_db(product_data: dict, background_tasks: BackgroundTasks):
+async def insert_product_to_db(product_data: dict):
     """
     Inserts product and product variations to the database.
 
     :param product_data: product data such as attributes,
     variations and so on (see src/products/schemes.py and src/products_admin/schemes.py).
-    :param background_tasks: FASTAPI BackgroundTasks object
     :return: parent id and list of inserted products' ids OR single product id and None
     """
     has_variations = product_data.get("has_variations", False)
@@ -131,6 +132,7 @@ async def insert_product_to_db(product_data: dict, background_tasks: BackgroundT
                         "attrs": product_data.get("attrs"),
                         "extra_attrs": product_data.get("extra_attrs"),
                         "parent": True,
+                        "is_filterable": False,
                         "for_sale": False,
                         "category": product_data.get("category"),
                         "variation_theme": product_data.get("variation_theme"),
@@ -139,13 +141,42 @@ async def insert_product_to_db(product_data: dict, background_tasks: BackgroundT
                     session=session
                 )
 
-                product_data["attrs"] = await remove_parent_attrs(product_data["attrs"], product_data["variation_theme"])
+                # Query a variation theme from db
+                var_theme_data = await db.variation_themes.find_one({"_id": product_data.get("variation_theme")}, {"filters": 1})
+                # stores all variation theme field codes
+                field_codes = []
+
+                # get all variation theme field codes
+                for var_theme_filter in var_theme_data.get("filters", []):
+                    field_codes.extend(var_theme_filter.get("field_codes"))
+
+                # remove parent's attributes
+                product_data["attrs"] = await remove_product_attrs(product_data["attrs"], field_codes)
+
+                def set_optional(elem):
+                    """
+                    Helper function to set property "optional"
+                    to False if element["code"] is in field_codes list
+                    """
+                    # copy the element to avoid mutating the original list
+                    new_elem = elem.copy()
+                    # set the "optional" property to True
+                    if new_elem.get("code") in field_codes:
+                        new_elem["optional"] = False
+                    # return the new element
+                    return new_elem
+
+                for variation in product_data.get("variations"):
+                    variation["attrs"] = list(map(set_optional, variation["attrs"]))
+
+
                 # create product variations
                 images_to_upload, product_variations = await insert_variations(
                     {
                         "attrs": product_data.get("attrs"),
                         "extra_attrs": product_data.get("extra_attrs"),
                         "for_sale": True,
+                        "is_filterable": product_data.get("is_filterable", False),
                         "category": product_data.get("category"),
                         "variation_theme": product_data.get("variation_theme"),
                         "same_images": same_images,
@@ -155,32 +186,17 @@ async def insert_product_to_db(product_data: dict, background_tasks: BackgroundT
                     session=session
                 )
 
-                async def upload_product_photos():
-                    """
-                    A helper function that uploads product photos to the storage and updates image URLs in the db.
-                    """
-                    # if same_images if False
-                    if not same_images:
-                        # Update images URLs for the parent product
-                        await update_image_links(parent,
-                                                 {
-                                                  "main": f"{BUCKET_BASE_URL}/products/{product_variations[0]}_0.jpg",
-                                                  "secondaryImages": None
-                                                 },
-                                                 )
-                        # Upload product images to S3 storage
-                        image_urls_list = await upload_imgs_many_prods(product_variations, images_to_upload)
-                        # Update images URLs for the variations
-                        await update_image_links(product_variations, [i.get("images") for i in image_urls_list])
-                    else:
-                        # Upload the same product images for all variations to S3 storage
-                        image_urls = await upload_imgs_single_prod(parent, product_data.get("images"))
-                        # Update the same images URLs for the variations
-                        await update_image_links([parent, *product_variations], image_urls.get("images"),
-                                                 same_images=True)
-
-                # Upload photos in the background to reduce response time
-                background_tasks.add_task(upload_product_photos)
+                # Upload photos in the another process to reduce response time
+                mp.Process(
+                    target=upload_product_photos,
+                    name="upload_images_multiple_prods",
+                    args=(
+                        {"same_images": same_images, "images": product_data.get("images")},
+                        parent,
+                        product_variations,
+                        images_to_upload
+                    )
+                ).start()
                 # return parent id and list of inserted products' ids
                 return parent, product_variations
 
@@ -191,6 +207,7 @@ async def insert_product_to_db(product_data: dict, background_tasks: BackgroundT
             "attrs": product_data.get("attrs"),
             "extra_attrs": product_data.get("extra_attrs"),
             "parent": False,
+            "is_filterable": product_data.get("is_filterable", False),
             "for_sale": True,
             "category": product_data.get("category"),
             "variation_theme": product_data.get("variation_theme"),
@@ -198,15 +215,14 @@ async def insert_product_to_db(product_data: dict, background_tasks: BackgroundT
         }
     )
 
-    async def upload_photos_single_product():
-        """
-        A helper function that uploads photos for a single product to the storage and updates image URLs in the db.
-        """
-        # Upload images for a single product to S3 storage
-        image_urls = await upload_imgs_single_prod(single_product, product_data.get("images"))
-        # Update the same images URLs for the variations
-        await update_image_links(single_product, image_urls.get("images"))
-
-    background_tasks.add_task(upload_photos_single_product)
+    # Upload photos in the another process to reduce response time
+    mp.Process(
+        target=upload_photos_single_product,
+        name="upload_photos_single_prod",
+        args=(
+            single_product,
+            {"images": product_data.get("images")}
+        )
+    ).start()
 
     return single_product, None

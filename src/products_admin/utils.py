@@ -84,18 +84,10 @@ class AttrsHandler:
         return self.attrs, errors
 
 
-async def remove_parent_attrs(attrs: List[dict], variation_theme: PyObjectId) -> List[dict]:
+async def remove_product_attrs(attrs: List[dict], field_codes: List[str]) -> List[dict]:
     """
     Removes attributes if attribute code in the list of variation theme field codes
     """
-    # Query a variation theme from db
-    var_theme_data = await db.variation_themes.find_one({"_id": variation_theme})
-    # stores all variation theme field codes
-    field_codes = []
-
-    # get all variation theme field codes
-    for var_theme_filter in var_theme_data.get("filters", []):
-        field_codes.extend(var_theme_filter.get("field_codes"))
 
     # filter product attributes. If attribute code is equal to one of variation theme field codes,
     # then remove attribute from list

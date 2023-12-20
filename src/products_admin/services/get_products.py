@@ -1,4 +1,7 @@
 from math import ceil
+
+from fastapi import HTTPException
+
 from src.database import db
 from src.schemes import PyObjectId
 
@@ -49,6 +52,9 @@ async def get_product_list(page: int, page_size: int) -> dict:
                                         # Add a tax field, for each joined product
                                         "tax": {"$round": [{"$multiply": ["$price", "$tax_rate"]}, 2]}
                                     }
+                                },
+                                {
+                                    "$sort": {"price": 1}
                                 }
                             ],
                             "as": "variations"
@@ -103,6 +109,70 @@ async def get_product_list(page: int, page_size: int) -> dict:
 
 
 async def get_product_details(product_id: PyObjectId):
+    # Pipeline that executes on product variations join
+    variations_lookup_pipeline = [
+        {
+            # Join variation theme
+            "$lookup": {
+                "from": "variation_themes",
+                "localField": "variation_theme",
+                "foreignField": "_id",
+                "as": "var_theme",
+            }
+        },
+        # Convert an array with variation theme to an object
+        {
+            "$unwind": "$var_theme"
+        },
+        {
+            "$addFields": {
+                # Get all field codes from variation theme
+                "field_codes": {
+                    "$reduce":
+                        {
+                            "input": "$var_theme.filters",
+                            "initialValue": [],
+                            "in": {
+                                "$concatArrays": ["$$value", "$$this.field_codes"]
+                            }
+                        }
+
+                },
+            }
+        },
+        {
+            "$addFields": {
+                # Filter attributes by attribute code. Attribute code should in field_codes array
+                "attrs": {
+                    "$filter": {
+                        "input": "$attrs",
+                        "as": "attr",
+                        "cond": {
+                            "$in": ["$$attr.code", "$field_codes"]
+                        }
+                    }
+                },
+            }
+        },
+        {
+            "$project": {
+                "extra_attrs": 0,
+                "parent_id": 0,
+                "category": 0,
+                "variation_theme": 0,
+                "for_sale": 0,
+                "same_images": 0,
+                "var_theme": 0,
+                "is_filterable": 0,
+                "field_codes": 0,
+            }
+        },
+        {
+            "$sort": {"price": 1}
+        }
+    ]
+
+    # Main aggregation pipeline
     pipeline = [
         # Match product with the specified id
         {
@@ -116,18 +186,7 @@ async def get_product_details(product_id: PyObjectId):
                 "from": "products",
                 "localField": "_id",
                 "foreignField": "parent_id",
-                "pipeline": [
-                    {
-                        "$project": {
-                            "extra_attrs": 0,
-                            "parent_id": 0,
-                            "category": 0,
-                            "variation_theme": 0,
-                            "for_sale": 0,
-                            "same_images": 0,
-                        }
-                    }
-                ],
+                "pipeline": variations_lookup_pipeline,
                 "as": "variations",
             }
         },
@@ -138,20 +197,20 @@ async def get_product_details(product_id: PyObjectId):
         },
         {
             "$addFields": {
-                # get all attribute codes
-                "attr_codes": {
-                    "$map": {
-                        "input": "$attrs",
-                        "as": "attr",
-                        "in": "$$attr.code"
-                    }
-                },
                 # Include variations to the output only if the product is the parent.
                 "variations": {
                     "$cond": {
                         "if": {"$eq": ["$parent", True]},
                         "then": "$variations",
                         "else": "$$REMOVE"
+                    }
+                },
+                # get all attribute codes
+                "attr_codes": {
+                    "$map": {
+                        "input": "$attrs",
+                        "as": "attr",
+                        "in": "$$attr.code"
                     }
                 },
             }
@@ -161,11 +220,18 @@ async def get_product_details(product_id: PyObjectId):
     product = await db.products.aggregate(pipeline=pipeline).to_list(length=None)
     product = product[0]
 
+    # if product not found, then raise HTTP 404 Not Found
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
     # get facets where code equals to one from product["attr_codes"] list
     facets = await db.facets.find({"code": {"$in": product.pop("attr_codes", [])}}).to_list(length=None)
 
     # get category where _id equals to product's category field.
     category = await db.categories.find_one({"_id": product.get("category")}, {"_id": 0, "name": 1, "groups": 1})
+
+    # get facet types
+    facet_types = await db.facet_types.find({"value": {"$ne": "list"}}, {"_id": 0, }).to_list(length=None)
 
     variation_theme = None
     # if there is a variation theme and product is the parent, then query a variation theme with _id equals to
@@ -183,16 +249,12 @@ async def get_product_details(product_id: PyObjectId):
 
         variation_theme["field_codes"] = field_codes
 
-
-
     result = {
         "product": product,
         "facets": facets,
         "variation_theme": variation_theme,
-        "category": category
+        "category": category,
+        "facet_types": facet_types,
     }
 
     return result
-
-
-

@@ -87,6 +87,8 @@ class Product(ProductVariation):
     category: PyObjectId
     # List of the product attributes (Properties)
     extra_attrs: List[Attr]
+    # Determines whether product's attributes can be used in filters
+    is_filterable: bool
     # Defines whether product has the same images as in other variations
     same_images: bool
     # variation theme, used to define differences between variations (Used only if product has variations)

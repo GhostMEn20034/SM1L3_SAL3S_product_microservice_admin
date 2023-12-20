@@ -12,7 +12,6 @@ from src.products_admin.utils import AttrsHandler
 from src.products_admin.services.insert_products import insert_product_to_db
 
 from fastapi.exceptions import HTTPException
-from fastapi import BackgroundTasks
 
 
 async def get_facets_and_variation_themes(category_id: PyObjectId):
@@ -56,7 +55,7 @@ async def get_facets_and_variation_themes(category_id: PyObjectId):
     }
 
 
-async def create_product(data: CreateProduct, background_tasks: BackgroundTasks):
+async def create_product(data: CreateProduct):
     # Dict with product data errors
     errors = {}
 
@@ -116,6 +115,6 @@ async def create_product(data: CreateProduct, background_tasks: BackgroundTasks)
 
     # convert all decimal fields into decimal128
     product_data = convert_decimal(product_data)
-    product, product_variations = await insert_product_to_db(product_data, background_tasks)
+    product, product_variations = await insert_product_to_db(product_data)
 
     return {"product_id": product, "variation_ids": product_variations}
