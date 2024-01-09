@@ -52,7 +52,6 @@ async def validate_images(images: Union[str, List[str]], many: bool = False):
 
     # Otherwise, validate only one image
     check_image_size_and_type(images, 0)
-
     # return image errors located in "0" key if errors dict is not empty, otherwise return None
     return errors[0] if errors else None
 

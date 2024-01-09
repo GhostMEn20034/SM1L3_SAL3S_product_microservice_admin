@@ -1,8 +1,9 @@
 from pydantic import BaseModel, Field, constr, validator
 from typing import List, Any, Optional, Union
-from src.schemes import PyObjectId
 from bson import ObjectId
 import fastapi
+from src.schemes import PyObjectId
+
 
 
 class FacetBase(BaseModel):
@@ -105,6 +106,7 @@ class FacetCreate(BaseModel):
             raise ValueError("Values must contain at least 1 item")
 
         return v
+
 
     class Config:
         json_encoders = {ObjectId: str}

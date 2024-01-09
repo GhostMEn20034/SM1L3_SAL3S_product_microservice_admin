@@ -1,6 +1,6 @@
 from __future__ import annotations
 from decimal import Decimal
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict
 from bson import ObjectId
 from pydantic import BaseModel, Field, constr, condecimal
 

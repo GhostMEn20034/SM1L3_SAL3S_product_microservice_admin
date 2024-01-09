@@ -32,6 +32,14 @@ async def facet_list(filters: FacetFilters = fastapi.Depends(FacetFilters), page
 
     facets = await services.get_facets(generated_filters, page, page_size)
 
+    if not facets:
+        result = {
+            "result": [],
+            "page_count": 1,
+        }
+
+        return result
+
     facets_count = facets[0].get("total_count")[0].get("total")
 
     result = {

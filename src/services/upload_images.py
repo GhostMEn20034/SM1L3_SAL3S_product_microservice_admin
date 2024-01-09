@@ -1,5 +1,8 @@
 import boto3
 import io
+from fastapi import HTTPException
+from pymongo import UpdateOne
+from pymongo.errors import BulkWriteError
 from src.schemes import PyObjectId
 from typing import List, Union
 from src.utils import get_image_from_base64
@@ -59,7 +62,8 @@ async def upload_imgs_single_prod(product_id: PyObjectId, images: dict) -> dict:
 
     return {"product_id": product_id, "images": {
         "main": main_image_url,
-        "secondaryImages": secondary_image_urls
+        "secondaryImages": secondary_image_urls,
+        "sourceProductId": None,
     }}
 
 async def upload_imgs_many_prods(product_ids: List[PyObjectId], images: List[dict]):
@@ -74,23 +78,47 @@ async def upload_imgs_many_prods(product_ids: List[PyObjectId], images: List[dic
     :return: List of image URLs.
     """
     # if there is no product ids or images or len of the product ids is not equal to the length of image
-    if not product_ids or not images or len(product_ids) != len(images):
+    if not all((product_ids, images)) or len(product_ids) != len(images):
         # then return empty list
         return []
 
+    # Cache for existing image URLs
+    existing_image_urls = {}
     # list of dicts that store image urls
     image_urls_list = []
 
     for product_id, image in zip(product_ids, images):
-        # upload images and get their URLs
-        image_urls = await upload_imgs_single_prod(product_id, image)
-        image_urls_list.append(image_urls)
+        if image.get("sourceProductId") is not None:
+            source_product_id = product_ids[image["sourceProductId"]]
+            # Check for existing image URLs for the source product
+            source_image_urls = existing_image_urls.get(source_product_id)
+
+            if source_image_urls:
+                image_urls_list.append(
+                    {"product_id": product_id, "images": {**source_image_urls, "sourceProductId": source_product_id}}
+                )
+            else:
+                # Upload images from the actual source image dictionary
+                source_images = images[image["sourceProductId"]]  # Retrieve images from the correct source
+                source_image_urls = await upload_imgs_single_prod(source_product_id, source_images)
+                existing_image_urls[source_product_id] = source_image_urls.get("images", {})
+                image_urls_list.extend(
+                    [
+                        {**source_image_urls, "product_id": source_product_id},
+                        {"product_id": product_id,
+                         "images": {**source_image_urls.get("images", {}), "sourceProductId": source_product_id}},
+                    ]
+                )
+        else:
+            # Check for cached URLs for this product
+            cached_urls = existing_image_urls.get(product_id)
+            if not cached_urls:
+                # Upload images for this unique product
+                image_urls = await upload_imgs_single_prod(product_id, image)
+                existing_image_urls[product_id] = image_urls.get("images")
+                image_urls_list.append({**image_urls, "product_id": product_id})
 
     return image_urls_list
-
-
-
-
 
 async def update_image_links(product_ids: Union[List[PyObjectId], PyObjectId], images: Union[List[dict], dict],
                              same_images: bool = False):
@@ -111,13 +139,19 @@ async def update_image_links(product_ids: Union[List[PyObjectId], PyObjectId], i
                 {"$set": {"images": images}}
             )
         else:
+            # List of operations for bulkWrite
+            operations = []
             # loop through the product ids and images
             for product_id, image in zip(product_ids, images):
-                # use the update_one method to update the image names for each product
-                await db.products.update_one(
+                # add the update_one method to the list of operations
+                operations.append(UpdateOne(
                     {"_id": product_id},
                     {"$set": {"images": image}}
-                )
+                ))
+            try:
+                await db.products.bulk_write(operations, ordered=False)
+            except BulkWriteError as bwe:
+                raise HTTPException(status_code=500, detail={"error": "Image links were not updated"})
     else:
         # use the update_one method to update the image names for the single product
         await db.products.update_one(

@@ -7,8 +7,7 @@ from src.schemes import PyObjectId
 class AttrsHandler:
     """
     Used to handle product attributes.
-    For example, you can use this class for validation product attrs.
-    Or you can use it to convert product attrs values on displayable values.
+    You can use this class for validation product attrs.
     """
 
     def __init__(self, attrs: List[dict]):
@@ -59,10 +58,10 @@ class AttrsHandler:
                         append_error_or_delete_attr(attr, "must be integer or decimal number", index)
 
                 case "list":
-                    # if attr value is not list or value is not list or list is empty
+                    # if attr value is not list or list is empty
                     if not attr.get("value") or not isinstance(attr.get("value"), list):
                         # if attr is optional, then remove attr from an array, otherwise add error to the list of errors
-                        append_error_or_delete_attr(attr, "must be list", index)
+                        append_error_or_delete_attr(attr, "must be a list and have at least one item", index)
 
                 case "bivariate":
                     # if there's no value or list is empty or value is not a list or length of list is not 2

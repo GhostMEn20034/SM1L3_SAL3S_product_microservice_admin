@@ -4,6 +4,7 @@ from decimal import Decimal
 from pydantic import BaseModel, condecimal, constr, conint, Field, validator
 
 from src.schemes import PyObjectId
+from src.variaton_themes.schemes import VariationThemeFilter
 
 
 class BaseAttrs(BaseModel):
@@ -12,12 +13,14 @@ class BaseAttrs(BaseModel):
     price: condecimal(decimal_places=2, ge=Decimal(0))
     # Decimal number that determines discount percentage.
     # For example 0.25 means 25% discount
-    discount_rate: Optional[condecimal(max_digits=3, decimal_places=2, le=Decimal(1))]
+    discount_rate: Optional[condecimal(max_digits=3, decimal_places=2, le=Decimal(1), ge=Decimal(0))]
     # Decimal number that determines tax percentage.
     # For example 0.02 means that 2% of the price is tax
     tax_rate: condecimal(max_digits=3, decimal_places=2, le=Decimal(1), ge=Decimal(0))
     # Determines the amount of products in stock
     stock: conint(ge=0)
+    # Maximum order quantity. Maximum count of product you can order
+    max_order_qty: conint(ge=0)
     # Stock Keeping Unit
     sku: constr(min_length=1) = Field(...)
     # External identifier such as Barcode, GTIN, UPC, etc. Not in use now
@@ -30,6 +33,14 @@ class BaseAttrs(BaseModel):
 
         return v
 
+class VariationThemeInProduct(BaseModel):
+    """
+    Variation theme in product.
+    """
+    # variation theme name
+    name: constr(min_length=1) = Field(...)
+    # Options that determine difference between products
+    options: List[VariationThemeFilter]
 
 class Attr(BaseModel):
     """Represents one product attribute (property)"""
@@ -57,11 +68,14 @@ class Images(BaseModel):
     # List of URLs of the secondary images of the product if user gets product.
     # if user creates product this field stores list of base64 encoded images
     secondaryImages: Optional[List[str]]
+    # ID of the product from which images were copied. OPTIONAL
+    # If this value is null / None, it is means that product has his own images.
+    sourceProductId: Optional[PyObjectId]
 
 
 class ProductVariation(BaseAttrs):
     """
-        Represents a product variations
+    Represents a product variations
     """
     # Stores encoded product images
     images: Optional[Images]
@@ -92,4 +106,4 @@ class Product(ProductVariation):
     # Defines whether product has the same images as in other variations
     same_images: bool
     # variation theme, used to define differences between variations (Used only if product has variations)
-    variation_theme: Optional[PyObjectId]
+    variation_theme: Optional[VariationThemeInProduct]

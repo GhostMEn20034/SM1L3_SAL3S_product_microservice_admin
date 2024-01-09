@@ -69,6 +69,15 @@ async def update_facet(facet_id: PyObjectId, data_to_update: dict):
 
 
 async def create_facet(data: dict):
+    # trying to find facet with the code "data.code"
+    facet = await db.facets.find_one({"code": data.get("code")})
+    # if there is a facet
+    if facet:
+        # then raise HTTP 400
+        raise HTTPException(status_code=400, detail={"code": f"Facet with {data.get('code')} code already exists"})
+
+    # If everything is fine
+    # then create a facet
     created_facet = await db.facets.insert_one(data)
     if created_facet.inserted_id:
         return True

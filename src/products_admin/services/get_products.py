@@ -95,6 +95,19 @@ async def get_product_list(page: int, page_size: int) -> dict:
 
     product_list = await db.products.aggregate(pipeline=pipeline).to_list(length=None)
 
+    # If there are no products, then
+    # return empty list, page count 0, items count 0
+    if not product_list:
+        return {
+            # list of products
+            "products": [],
+            # Count of pages
+            "page_count": 1,
+            # Count of products
+            "items_count": 0,
+        }
+
+    # otherwise, return product list, product count, page count from query
     products_count = product_list[0].get("count", 0)
 
     result = {
@@ -112,25 +125,12 @@ async def get_product_details(product_id: PyObjectId):
     # Pipeline that executes on product variations join
     variations_lookup_pipeline = [
         {
-            # Join variation theme
-            "$lookup": {
-                "from": "variation_themes",
-                "localField": "variation_theme",
-                "foreignField": "_id",
-                "as": "var_theme",
-            }
-        },
-        # Convert an array with variation theme to an object
-        {
-            "$unwind": "$var_theme"
-        },
-        {
             "$addFields": {
                 # Get all field codes from variation theme
                 "field_codes": {
                     "$reduce":
                         {
-                            "input": "$var_theme.filters",
+                            "input": "$variation_theme.options",
                             "initialValue": [],
                             "in": {
                                 "$concatArrays": ["$$value", "$$this.field_codes"]
@@ -162,7 +162,6 @@ async def get_product_details(product_id: PyObjectId):
                 "variation_theme": 0,
                 "for_sale": 0,
                 "same_images": 0,
-                "var_theme": 0,
                 "is_filterable": 0,
                 "field_codes": 0,
             }
@@ -225,7 +224,14 @@ async def get_product_details(product_id: PyObjectId):
         raise HTTPException(status_code=404, detail="Product not found")
 
     # get facets where code equals to one from product["attr_codes"] list
-    facets = await db.facets.find({"code": {"$in": product.pop("attr_codes", [])}}).to_list(length=None)
+    # OR category is equal to product.category or equal to "*"
+    facets = await db.facets.find(
+        {"$or":[
+            {"code": {"$in": product.pop("attr_codes", [])}},
+            {"categories": {"$in": [product.get("category"), "*"]}}
+        ]
+         }
+    ).to_list(length=None)
 
     # get category where _id equals to product's category field.
     category = await db.categories.find_one({"_id": product.get("category")}, {"_id": 0, "name": 1, "groups": 1})
@@ -233,21 +239,22 @@ async def get_product_details(product_id: PyObjectId):
     # get facet types
     facet_types = await db.facet_types.find({"value": {"$ne": "list"}}, {"_id": 0, }).to_list(length=None)
 
-    variation_theme = None
-    # if there is a variation theme and product is the parent, then query a variation theme with _id equals to
-    # product's variation_theme field
-    if product["variation_theme"] is not None and product["parent"]:
-        variation_theme = await db.variation_themes.find_one({"_id": product["variation_theme"], },
-                                                             {"_id": 0, "name": 1, "filters": 1})
-        # get filters (list of objects which store attribute codes)
-        filters = variation_theme.pop("filters", [])
-        field_codes = []
-        for attr_filter in filters:
-            filter_field_codes = attr_filter.get("field_codes", [])
-            # Add items from the filter's field_codes list to the field_codes list above
-            field_codes.extend(filter_field_codes)
 
+    if product.get("parent"):
+        # get variation theme
+        variation_theme = dict(product.get("variation_theme"))
+
+        # initialize list where field_codes from variation theme is stored
+        field_codes = []
+
+        for option in variation_theme.pop("options", []):
+            # get field_codes from each option in variation theme options
+            field_codes.extend(option.get("field_codes", []))
+
+        # Assign field_codes property to list of all field codes in options
         variation_theme["field_codes"] = field_codes
+    else:
+        variation_theme = None
 
     result = {
         "product": product,

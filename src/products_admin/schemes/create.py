@@ -5,7 +5,7 @@ from src.categories_admin.schemes import CategoryForChoices
 from src.facets.schemes import Facet
 from src.variaton_themes.schemes import VariationTheme
 from src.facet_types.schemes import FacetType
-from src.products.schemes.base import Attr, BaseAttrs, Images, ProductVariation
+from src.products.schemes.base import Attr, BaseAttrs, Images, ProductVariation, VariationThemeInProduct
 
 from bson import ObjectId
 from src.schemes import PyObjectId
@@ -30,6 +30,26 @@ class ProductCreateForm(BaseModel):
         arbitrary_types_allowed = True  # required for the _id
         json_encoders = {ObjectId: str}
 
+
+class ImagesCreateProduct(Images):
+    """
+    Represents images in create product form
+    """
+    main: Optional[str]
+    secondaryImages: Optional[List[str]]
+    # Since products is not created yet, they don't have ids.
+    # So we will use indexes to determine from what product we need to copy images
+    # before products will be created. When we upload images to the storage,
+    # server will replace indexes with ObjectId
+    sourceProductId: Optional[int]
+
+
+class ProductVariationCreateProduct(ProductVariation):
+    """
+    Represents product variation in create product form
+    """
+    images: Optional[ImagesCreateProduct]
+
 class CreateProduct(BaseModel):
     """Represents data to create a product"""
     # List of the product attributes (Properties)
@@ -43,15 +63,15 @@ class CreateProduct(BaseModel):
     # determines whether product has variations
     has_variations: bool
     # Object that stores main image and list of secondary images
-    images: Optional[Images]
+    images: Optional[ImagesCreateProduct]
     # Determines whether product variations has the same images
     same_images: bool
     # Determines whether product's attributes can be used in filters
     is_filterable: bool
     # used to define differences between variations (Uses only if product has variations)
-    variation_theme: Optional[PyObjectId]
+    variation_theme: Optional[VariationThemeInProduct]
     # List of product variations
-    variations: Optional[List[ProductVariation]]
+    variations: Optional[List[ProductVariationCreateProduct]]
 
     @validator("images")
     def check_images_if_same_images(cls, v, values):
@@ -81,7 +101,7 @@ class CreateProduct(BaseModel):
         Raises error if has_variations is true and there are no product variations
         """
         if values.get("has_variations") and not v:
-            raise ValueError("Variation theme required")
+            raise ValueError("Variations required")
 
         return v
 

@@ -9,7 +9,7 @@ from src.schemes import PyObjectId
 
 from src.products_admin.schemes.create import CreateProduct
 from src.products_admin.utils import AttrsHandler
-from src.products_admin.services.insert_products import insert_product_to_db
+from src.products_admin.services.insert_product_to_db import insert_product_to_db
 
 from fastapi.exceptions import HTTPException
 

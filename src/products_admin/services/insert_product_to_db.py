@@ -1,5 +1,4 @@
 from typing import List, Optional, Tuple
-from fastapi import BackgroundTasks
 import multiprocessing as mp
 
 from src.database import db, client
@@ -29,7 +28,7 @@ async def insert_product(product_data: dict, session=None) -> PyObjectId:
         "parent_id": None, # id of parent (For parent product or product without children value is None)
         "for_sale": product_data.get("for_sale"), # is product for sale
         "same_images": product_data.get("same_images"), # Do parent product and product variations have the same images
-        "variation_theme":  product_data.get("variation_theme"),  # variation theme id
+        "variation_theme":  product_data.get("variation_theme"),  # variation theme
         "is_filterable": product_data.get("is_filterable"), # Are product's attributes can be used in filters?
         "category": product_data.get("category"), # product category
         "attrs":  product_data.get("attrs", []), # main attributes
@@ -61,6 +60,18 @@ async def insert_variations(product_data: dict,
     # if extra attrs is None, then the value will be an empty list
     extra_attrs = product_data.get("extra_attrs") if product_data.get("extra_attrs") else []
 
+    # Dict with common product data
+    common_data = {
+        "parent": False,  # Is a parent product
+        "parent_id": parent_id,  # id of parent (For parent product or product without children value is None)
+        "for_sale": product_data.get("for_sale"),  # is product for sale
+        "same_images": same_images,
+        "is_filterable": product_data.get("is_filterable"),  # Are product's attributes can be used in filters?
+        "variation_theme": product_data.get("variation_theme"),  # get variation theme
+        "category": product_data.get("category"),  # product category
+        "extra_attrs": extra_attrs,  # get extra attributes
+    }
+
     if not same_images:
         images_to_upload = [] # images that will be uploaded
         product_variations = []  # product variations data from which the product variations will be created in the db
@@ -71,15 +82,8 @@ async def insert_variations(product_data: dict,
             images_to_upload.append(variation_images)
             data_to_insert = {
                 **variation,  # unpack variation's base attributes
-                "parent": False, # Is a parent product
-                "parent_id": parent_id, # id of parent (For parent product or product without children value is None)
-                "for_sale": product_data.get("for_sale"), # is product for sale
-                "same_images": same_images,
-                "is_filterable": product_data.get("is_filterable"),  # Are product's attributes can be used in filters?
-                "variation_theme": product_data.get("variation_theme"), # variation theme id
-                "category": product_data.get("category"), # product category
+                **common_data, # unpack common data for all variations
                 "attrs": attrs + variation_attrs,  # concatenate parent attributes and variation attributes
-                "extra_attrs": extra_attrs, # extra attributes
             }
             product_variations.append(data_to_insert)
         inserted_products = await db.products.insert_many(product_variations, session=session)
@@ -94,14 +98,8 @@ async def insert_variations(product_data: dict,
         variation.pop("images", None)
         data_to_insert = {
             **variation,  # unpack variation's base attributes
-            "parent": False,  # Is a parent product
-            "parent_id": parent_id, # id of parent (For parent product or product without children value is None)
-            "for_sale":  product_data.get("for_sale"), # is product for sale
-            "same_images": same_images,
-            "variation_theme": product_data.get("variation_theme"), # get variation theme id
-            "category": product_data.get("category"), # product category
+            **common_data,  # unpack common data for all variations
             "attrs": attrs + variation_attrs,  # concatenate two arrays
-            "extra_attrs": extra_attrs, # get extra attributes
         }
         product_variations.append(data_to_insert)
 
@@ -125,6 +123,26 @@ async def insert_product_to_db(product_data: dict):
     if has_variations:
         async with await client.start_session() as session:
             async with session.start_transaction():
+                # Get variation theme options
+                var_theme_options = product_data.get("variation_theme", {}).get("options", [])
+
+                def set_optional(elem):
+                    """
+                    Helper function to set property "optional"
+                    to False
+                    """
+                    # copy the element to avoid mutating the original list
+                    new_elem = elem.copy()
+                    # set the "optional" property to True
+                    new_elem["optional"] = False
+                    # return the new element
+                    return new_elem
+
+                product_data["attrs"] = list(map(set_optional, product_data["attrs"]))
+
+                for variation in product_data.get("variations"):
+                    variation["attrs"] = list(map(set_optional, variation["attrs"]))
+
                 # create a parent product
                 parent = await insert_product(
                     {
@@ -140,35 +158,14 @@ async def insert_product_to_db(product_data: dict):
                     },
                     session=session
                 )
-
-                # Query a variation theme from db
-                var_theme_data = await db.variation_themes.find_one({"_id": product_data.get("variation_theme")}, {"filters": 1})
                 # stores all variation theme field codes
                 field_codes = []
-
                 # get all variation theme field codes
-                for var_theme_filter in var_theme_data.get("filters", []):
-                    field_codes.extend(var_theme_filter.get("field_codes"))
+                for option in var_theme_options:
+                    field_codes.extend(option.get("field_codes", []))
 
                 # remove parent's attributes
                 product_data["attrs"] = await remove_product_attrs(product_data["attrs"], field_codes)
-
-                def set_optional(elem):
-                    """
-                    Helper function to set property "optional"
-                    to False if element["code"] is in field_codes list
-                    """
-                    # copy the element to avoid mutating the original list
-                    new_elem = elem.copy()
-                    # set the "optional" property to True
-                    if new_elem.get("code") in field_codes:
-                        new_elem["optional"] = False
-                    # return the new element
-                    return new_elem
-
-                for variation in product_data.get("variations"):
-                    variation["attrs"] = list(map(set_optional, variation["attrs"]))
-
 
                 # create product variations
                 images_to_upload, product_variations = await insert_variations(
