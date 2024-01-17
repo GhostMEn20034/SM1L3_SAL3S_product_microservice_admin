@@ -1,8 +1,5 @@
 from typing import List
 from decimal import Decimal
-from src.database import db
-from src.schemes import PyObjectId
-
 
 class AttrsHandler:
     """
@@ -25,6 +22,10 @@ class AttrsHandler:
         """
         errors = {} # list of attribute errors
         attrs_to_delete = [] # list of attribute indexes to remove
+
+        # If there are no product attributes, then return empty list and empty error dict
+        if not self.attrs:
+            return [], errors
 
         def append_error_or_delete_attr(attr: dict, message: str, attr_index: int):
             """
@@ -87,9 +88,13 @@ async def remove_product_attrs(attrs: List[dict], field_codes: List[str]) -> Lis
     """
     Removes attributes if attribute code in the list of variation theme field codes
     """
-
-    # filter product attributes. If attribute code is equal to one of variation theme field codes,
+    # filter product attributes. If attribute code is equal to one in field codes,
     # then remove attribute from list
     filtered_attrs = filter(lambda attr: attr["code"] not in field_codes, attrs)
-
     return list(filtered_attrs)
+
+async def set_attr_non_optional(attrs: List[dict]) ->  List[dict]:
+    """
+    Set "optional" property to False in all product attributes
+    """
+    return list(map(lambda attr: {**attr, "optional": False}, attrs))

@@ -62,15 +62,15 @@ class Attr(BaseModel):
 
 class Images(BaseModel):
     """Represents product images"""
+    # ID of the product from which images were copied. OPTIONAL
+    # If this value is null / None, it is means that product has his own images.
+    sourceProductId: Optional[PyObjectId]
     # The URL of the main product image if user gets product.
     # if user creates product this field stores base64 encoded image
     main: str
     # List of URLs of the secondary images of the product if user gets product.
     # if user creates product this field stores list of base64 encoded images
     secondaryImages: Optional[List[str]]
-    # ID of the product from which images were copied. OPTIONAL
-    # If this value is null / None, it is means that product has his own images.
-    sourceProductId: Optional[PyObjectId]
 
 
 class ProductVariation(BaseAttrs):

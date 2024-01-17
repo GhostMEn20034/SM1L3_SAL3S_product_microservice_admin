@@ -1,7 +1,15 @@
-from typing import List, Optional
+from typing import List, Optional, TypedDict, Union
 from pydantic import BaseModel, Field
 from src.products.schemes.base import Attr, BaseAttrs, ProductVariation
+from .create import ImagesCreateProduct
 from src.schemes import PyObjectId
+
+
+class ImagesUpdateProduct(ImagesCreateProduct):
+    """
+    Represent images in new variations of existing product
+    """
+    sourceProductId: Optional[Union[PyObjectId, int]]
 
 
 class OldProductVariations(BaseAttrs):
@@ -9,6 +17,13 @@ class OldProductVariations(BaseAttrs):
     Old product variations
     """
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
+
+
+class NewProductVariations(ProductVariation):
+    """
+    New product variations
+    """
+    images: Optional[ImagesUpdateProduct]
 
 
 class SecondaryImageReplace(BaseModel):
@@ -63,8 +78,16 @@ class UpdateProduct(BaseModel):
     # Image operations
     image_ops: Optional[ImageOps]
     # New product variations
-    new_variations: Optional[List[ProductVariation]]
+    new_variations: Optional[List[NewProductVariations]]
     # Old product variations
     old_variations: Optional[List[OldProductVariations]]
     # List of variations to delete
     variations_to_delete: Optional[List[PyObjectId]]
+
+
+class ExtraProductDataUpdate(TypedDict):
+    """
+    Used to provide extra data to product update data
+    """
+    parent: bool
+    same_images: bool

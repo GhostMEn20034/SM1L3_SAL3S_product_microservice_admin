@@ -1,69 +1,58 @@
-from src.database import db
-from src.schemes import PyObjectId
+from math import ceil
 from fastapi.exceptions import HTTPException
+from .repository import VariationThemeRepository
+from src.schemes import PyObjectId
 
-async def get_variation_themes(page: int, page_size: int):
-    pipeline = [
-        {
-            "$facet": {
-                "result": [
-                    {
-                        "$project": {
-                            "_id": 1,
-                            "name": 1
-                        }
-                    },
-                    {
-                        "$skip": (page - 1) * page_size
-                    },
-                    {
-                        "$limit": page_size
-                    }
-                ],
-                "total_count": [
-                    {"$count": "total"}
-                ]
+class VariationThemesService:
+    """
+        Responsible for variation theme business logic
+    """
+    def __init__(self, repository: VariationThemeRepository):
+        self.repository = repository
+
+    async def get_variation_themes(self, page: int, page_size: int):
+        variation_themes = await self.repository.get_variation_themes_with_doc_count(page, page_size)
+        # If there are no results
+        # then return default result
+        if not variation_themes.get("result"):
+            result = {
+                "result": [],
+                "page_count": 1,
             }
-        },
-    ]
+            return result
 
-    variation_themes = await db.variation_themes.aggregate(pipeline).to_list(length=None)
-    return variation_themes
+        # get variation theme count
+        var_theme_count = variation_themes.get("total_count").get("total")
 
+        result = {
+            "result": variation_themes.get("result"),
+            "page_count": ceil(var_theme_count / page_size), # Calculating count of pages
+        }
 
-async def get_variation_theme_by_id(variation_theme_id: PyObjectId):
-    variation_theme = await db.variation_themes.find_one({"_id": variation_theme_id})
-    return variation_theme
+        return result
 
+    async def get_variation_theme_by_id(self, variation_theme_id: PyObjectId):
+        variation_theme = await self.repository.get_one_variation_theme({"_id": variation_theme_id})
+        if not variation_theme:
+            raise HTTPException(status_code=404, detail="Variation theme not found")
 
-async def update_variation_theme(variation_theme_id: PyObjectId, data: dict):
-    variation_theme = await db.variation_themes.find_one({"_id": variation_theme_id}, {"_id": 1})
-    if not variation_theme:
-        raise HTTPException(status_code=404, detail="Variation theme not found")
+        return variation_theme
 
-    await db.variation_themes.update_one({"_id": variation_theme_id}, {"$set": data})
+    async def update_variation_theme(self, variation_theme_id: PyObjectId, data: dict):
+        variation_theme = await self.repository.get_one_variation_theme({"_id": variation_theme_id})
+        if not variation_theme:
+            raise HTTPException(status_code=404, detail="Variation theme not found")
 
+        await self.repository.update_variation_theme({"_id": variation_theme_id}, {"$set": data})
 
-async def create_variation_theme(data: dict):
-    created_variation_theme = await db.variation_themes.insert_one(data)
-    if created_variation_theme.inserted_id:
-        return True
+    async def create_variation_theme(self, data: dict):
+        created_variation_theme = await self.repository.create_variation_theme(data)
+        if not created_variation_theme:
+            raise HTTPException(status_code=400, detail="Variation theme not created")
 
-    return False
+    async def delete_variation_theme(self, variation_theme_id: PyObjectId):
+        variation_theme = await self.repository.get_one_variation_theme({"_id": variation_theme_id})
+        if not variation_theme:
+            raise HTTPException(status_code=404, detail="Variation theme not found")
 
-
-async def delete_variation_theme(variation_theme_id: PyObjectId):
-    variation_theme = await db.variation_themes.find_one({"_id": variation_theme_id}, {"_id": 1})
-    if not variation_theme:
-        raise HTTPException(status_code=404, detail="Variation theme not found")
-
-    products = await db.products.find({"variation_theme": variation_theme_id}, {"_id": 1}).to_list(length=None)
-    if products:
-        raise HTTPException(
-            status_code=400,
-            detail="Variation theme cannot be deleted "
-                   "since there are products with variation theme, which you want to delete"
-        )
-
-
-    await db.variation_themes.delete_one({"_id": variation_theme_id})
+        await self.repository.delete_variation_theme({"_id": variation_theme_id})

@@ -1,11 +1,11 @@
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, root_validator
 from typing import List, Union, Optional
 
 from src.categories_admin.schemes import CategoryForChoices
 from src.facets.schemes import Facet
 from src.variaton_themes.schemes import VariationTheme
 from src.facet_types.schemes import FacetType
-from src.products.schemes.base import Attr, BaseAttrs, Images, ProductVariation, VariationThemeInProduct
+from src.products.schemes.base import Attr, BaseAttrs, ProductVariation, VariationThemeInProduct
 
 from bson import ObjectId
 from src.schemes import PyObjectId
@@ -31,17 +31,23 @@ class ProductCreateForm(BaseModel):
         json_encoders = {ObjectId: str}
 
 
-class ImagesCreateProduct(Images):
+class ImagesCreateProduct(BaseModel):
     """
     Represents images in create product form
     """
-    main: Optional[str]
-    secondaryImages: Optional[List[str]]
     # Since products is not created yet, they don't have ids.
     # So we will use indexes to determine from what product we need to copy images
     # before products will be created. When we upload images to the storage,
     # server will replace indexes with ObjectId
     sourceProductId: Optional[int]
+    main: Optional[str]
+    secondaryImages: Optional[List[str]]
+
+    @validator("main")
+    def validate_main(cls, v, values):
+        if v is None and values.get("sourceProductId") is None:
+            raise ValueError("Main Image required")
+        return v
 
 
 class ProductVariationCreateProduct(ProductVariation):
@@ -49,6 +55,7 @@ class ProductVariationCreateProduct(ProductVariation):
     Represents product variation in create product form
     """
     images: Optional[ImagesCreateProduct]
+
 
 class CreateProduct(BaseModel):
     """Represents data to create a product"""
@@ -73,16 +80,14 @@ class CreateProduct(BaseModel):
     # List of product variations
     variations: Optional[List[ProductVariationCreateProduct]]
 
-    @validator("images")
-    def check_images_if_same_images(cls, v, values):
-        """
-        Raises error if there's no value AND (same_images is true OR has_variations is false)
-        """
-
-        if not v and (values.get("same_images") or not values.get("has_variations")):
-            raise ValueError("Images required")
-
-        return v
+    # @root_validator
+    # def check_images_if_same_images(cls, values):
+    #     """
+    #     Raises error if there's no value AND (same_images is true OR has_variations is false)
+    #     """
+    #     if not values.get("images") and (values.get("same_images") or not values.get("has_variations")):
+    #         raise ValueError("Images required")
+    #     return values
 
 
     @validator("variation_theme")
@@ -92,7 +97,6 @@ class CreateProduct(BaseModel):
         """
         if values.get("has_variations") and not v:
             raise ValueError("Variation theme required")
-
         return v
 
     @validator("variations")
@@ -102,7 +106,6 @@ class CreateProduct(BaseModel):
         """
         if values.get("has_variations") and not v:
             raise ValueError("Variations required")
-
         return v
 
 

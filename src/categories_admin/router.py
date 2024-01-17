@@ -1,9 +1,9 @@
 import fastapi
-import math
 from typing import List
-from . import services
+from fastapi import Depends
+from .service import CategoryService
 from . import schemes
-
+from src.dependencies import get_category_service
 from src.schemes import PyObjectId
 
 router = fastapi.APIRouter(
@@ -13,64 +13,47 @@ router = fastapi.APIRouter(
 
 
 @router.get("/for-choices", response_model=List[schemes.CategoryForChoices])
-async def category_list_for_choices():
+async def category_list_for_choices(service: CategoryService = Depends(get_category_service)):
     """
     Returns the list of categories for choices.
     Used for the forms where choose category required.
     """
-    categories = await services.get_categories_for_choices()
+    categories = await service.get_categories_for_choices()
     return categories
 
-
-@router.get("/", response_model=schemes.CategoryAdminPanelList)
+@router.get("/", response_model=schemes.CategoryAdminPanelListResponse)
 async def category_list_for_admin_panel(page: int = fastapi.Query(1, ge=1),
-                     page_size: int = fastapi.Query(15, ge=0)):
+                                        page_size: int = fastapi.Query(15, ge=0),
+                                        service: CategoryService = Depends(get_category_service)):
     """
     Returns the list of categories and count of pages.
     """
-    categories = await services.get_categories_for_admin_panel(page, page_size)
-
-    page_count = categories[0].get("total_count")[0].get("total")
-
-    result = {
-        "result": categories[0].get("result"),
-        "page_count": math.ceil(page_count / page_size)
-    }
-
+    result = await service.get_categories_for_admin_panel(page, page_size)
     return result
 
-
 @router.get("/tree", response_model=List[schemes.CategoryList])
-async def category_list_tree():
+async def category_list_tree(service: CategoryService = Depends(get_category_service)):
     """
     Returns a category list in the tree-like format
     """
-    categories = await services.get_categories_tree()
-    return categories
-
+    result = await service.get_categories_tree()
+    return result
 
 @router.get("/{category_id}", response_model=schemes.Category)
-async def category_detail(category_id: PyObjectId):
-    category = await services.get_category_by_id(category_id)
-
-    if not category:
-        raise fastapi.exceptions.HTTPException(status_code=404, detail="Category not found")
-
-    return category
-
+async def category_detail(category_id: PyObjectId, service: CategoryService = Depends(get_category_service)):
+    result = await service.get_category_by_id(category_id)
+    return result
 
 @router.put("/{category_id}", status_code=fastapi.status.HTTP_204_NO_CONTENT)
-async def category_update(category_id: PyObjectId, data: schemes.CategoryUpdate):
-    await services.update_category(category_id, data.dict())
-
+async def category_update(category_id: PyObjectId,
+                          data: schemes.CategoryUpdate,
+                          service: CategoryService = Depends(get_category_service)):
+    await service.update_category(category_id, data.dict())
 
 @router.post("/", status_code=fastapi.status.HTTP_201_CREATED)
-async def category_create(data: schemes.CategoryCreate):
-    created_category = await services.create_category(data.dict())
-    if not created_category:
-        raise fastapi.exceptions.HTTPException(status_code=400, detail="Category not created")
-
+async def category_create(data: schemes.CategoryCreate, service: CategoryService = Depends(get_category_service)):
+    await service.create_category(data.dict())
 
 @router.delete("/{category_id}", status_code=fastapi.status.HTTP_204_NO_CONTENT)
-async def category_delete(category_id: PyObjectId):
-    await services.delete_category(category_id)
+async def category_delete(category_id: PyObjectId, service: CategoryService = Depends(get_category_service)):
+    await service.delete_category(category_id)

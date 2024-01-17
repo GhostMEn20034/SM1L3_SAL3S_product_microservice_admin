@@ -34,8 +34,12 @@ class Category(BaseModel):
         arbitrary_types_allowed = True  # required for the _id
         json_encoders = {ObjectId: str}
 
-class CategoryAdminPanelList(BaseModel):
-    result: List[Category]
+class CategoryWithParentName(Category):
+    parent_name: Optional[str] # string representation of parent
+
+
+class CategoryAdminPanelListResponse(BaseModel):
+    result: List[CategoryWithParentName]
     page_count: int
 
     class Config:

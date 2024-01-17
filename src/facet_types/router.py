@@ -1,7 +1,11 @@
 import fastapi
-from .services import get_facet_types
-from .schemes import FacetType
+from fastapi import Depends
 from typing import List
+
+from src.dependencies import get_facet_type_service
+from .service import FacetTypeService
+from .schemes import FacetType
+
 
 router = fastapi.APIRouter(
     prefix='/admin/facet-types',
@@ -10,6 +14,6 @@ router = fastapi.APIRouter(
 
 
 @router.get("/", response_model=List[FacetType])
-async def facet_types_list():
-    facet_types = await get_facet_types()
+async def facet_types_list(service: FacetTypeService = Depends(get_facet_type_service)):
+    facet_types = await service.get_facet_types()
     return facet_types

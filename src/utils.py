@@ -1,3 +1,4 @@
+import asyncio
 import base64
 from decimal import Decimal
 from bson.decimal128 import Decimal128
@@ -93,3 +94,14 @@ async def get_image_from_base64(base64_str: str) -> bytes:
     # decode the image
     decoded_image = base64.b64decode(encoded_image)
     return decoded_image
+
+def async_worker(func, *args, **kwargs):
+    """
+    Runs function asynchronously in sync environment
+    Params:
+    :param func: async function to execute
+    :param args: function's positional arguments
+    :param kwargs: function's keyword arguments
+    """
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(func(*args, **kwargs))
