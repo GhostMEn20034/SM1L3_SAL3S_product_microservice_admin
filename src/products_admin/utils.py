@@ -98,3 +98,39 @@ async def set_attr_non_optional(attrs: List[dict]) ->  List[dict]:
     Set "optional" property to False in all product attributes
     """
     return list(map(lambda attr: {**attr, "optional": False}, attrs))
+
+
+def form_data_to_update(product_data: dict, parent: bool):
+    """
+    Returns only the necessary data to update the product.
+    :param product_data: All product data to update
+    :param parent: Whether a product is a parent.
+    """
+    data_to_update = {
+        **product_data.get("base_attrs", {}),
+        "attrs": product_data.get("attrs", []),
+        "extra_attrs": product_data.get("extra_attrs", []),
+    }
+
+    if not parent:
+        data_to_update.update({
+           "for_sale": product_data.get("for_sale"),
+           "is_filterable": product_data.get("is_filterable"),
+        })
+
+    return data_to_update
+
+async def get_var_theme_field_codes(variation_theme: dict):
+    """
+    Return Variation theme field codes
+    """
+    # Get variation theme options
+    var_theme_options = variation_theme.get("options", [])
+    # stores all variation theme field codes
+    field_codes = []
+    # get all variation theme field codes
+    for option in var_theme_options:
+        field_codes.extend(option.get("field_codes", []))
+
+    return field_codes
+

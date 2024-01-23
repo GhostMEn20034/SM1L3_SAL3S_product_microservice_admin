@@ -1,19 +1,20 @@
-import boto3
 import io
 from bson import ObjectId
 from typing import List
+
+from src.file_storage import get_s3_client
 from src.utils import get_image_from_base64
-from src.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, S3_BUCKET_NAME, BUCKET_BASE_URL
+from src.settings import S3_BUCKET_NAME, BUCKET_BASE_URL
 
 
-async def upload_image(key: str, bytes_io: io.BytesIO, bucket_name: str):
+async def upload_file_to_s3(key: str, bytes_io: io.BytesIO, bucket_name: str):
     """
     Uploads image to the amazon s3 storage.
     :param key: file name.
     :param bytes_io: file in the form of bytes.
     :param bucket_name: Name of the s3 bucket.
     """
-    s3 = boto3.client('s3', aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
+    s3 = get_s3_client()
     s3.upload_fileobj(bytes_io, bucket_name, key, ExtraArgs={"ContentType": "image/jpeg"})
 
 async def upload_images_single_product(product_id: ObjectId, images: dict) -> dict:
@@ -36,7 +37,7 @@ async def upload_images_single_product(product_id: ObjectId, images: dict) -> di
     secondary_image_urls = None
 
     # upload image to the amazon s3
-    await upload_image(main_image_name, main_image_bytes_io, S3_BUCKET_NAME)
+    await upload_file_to_s3(main_image_name, main_image_bytes_io, S3_BUCKET_NAME)
 
     # URL of the uploaded main image
     main_image_url = BUCKET_BASE_URL + "/" + main_image_name
@@ -51,7 +52,7 @@ async def upload_images_single_product(product_id: ObjectId, images: dict) -> di
             # create bytes io object for the secondary image
             secondary_image_bytes_io = io.BytesIO(decoded_secondary_image)
             # upload image to the amazon s3
-            await upload_image(secondary_image_name, secondary_image_bytes_io, S3_BUCKET_NAME)
+            await upload_file_to_s3(secondary_image_name, secondary_image_bytes_io, S3_BUCKET_NAME)
             # URL of the secondary image
             secondary_image_url = BUCKET_BASE_URL + "/" + secondary_image_name
             secondary_image_urls.append(secondary_image_url)
@@ -123,3 +124,32 @@ async def upload_images_many_products(product_ids: List[ObjectId], images: List[
                 image_urls_list.append({**image_urls, "product_id": product_id})
 
     return image_urls_list
+
+async def delete_one_file_in_s3(bucket_name: str, key: str, **kwargs):
+    """
+    :param bucket_name: Name of the s3 bucket.
+    :param key: Name of the file to delete
+    """
+    s3 = get_s3_client()
+    response = s3.delete_object(Bucket=bucket_name, Key=key, **kwargs)
+    return response
+
+async def delete_many_files_in_s3(bucket_name: str, objects_to_delete: list[dict], **kwargs):
+    """
+    :param bucket_name: Name of the s3 bucket
+    :param objects_to_delete: List of filenames to delete
+    Example of objects_to_delete:
+    [
+        {
+            'Key': 'string1.jpg',
+             # Other file's metadata
+        },
+        {
+            'Key': 'string2.jpg',
+             # Other file's metadata
+        },
+    ]
+    """
+    s3 = get_s3_client()
+    response = s3.delete_objects(Bucket=bucket_name, Delete={'Objects': objects_to_delete}, **kwargs)
+    return response

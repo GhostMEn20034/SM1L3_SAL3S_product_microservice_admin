@@ -1,4 +1,6 @@
+from pymongo.results import InsertOneResult, UpdateResult, DeleteResult
 from typing import Optional
+
 from src.database import db
 
 
@@ -97,7 +99,7 @@ class CategoryRepository:
         category = await db.categories.find_one(filters, projection, **kwargs)
         return category
 
-    async def create_category(self, data: dict, **kwargs) -> bool:
+    async def create_category(self, data: dict, **kwargs) -> InsertOneResult:
         """
         Creates a new category
         :param kwargs: Other parameters for insert such as session for transaction etc.
@@ -107,21 +109,23 @@ class CategoryRepository:
             raise ValueError("No data provided")
 
         created_category = await db.categories.insert_one(data, **kwargs)
-        return created_category.inserted_id is not None
+        return created_category
 
-    async def update_category(self, filters: dict, data_to_update: dict, **kwargs):
+    async def update_category(self, filters: dict, data_to_update: dict, **kwargs) -> UpdateResult:
         """
         Updates a category
         :param filters: A query that matches the document to update.
         :param data_to_update: Changed category data and operations on them ($set and so on).
         :param kwargs: Other parameters for update such as session for transaction etc.
         """
-        await db.categories.update_one(filter=filters, update=data_to_update, **kwargs)
+        updated_category = await db.categories.update_one(filter=filters, update=data_to_update, **kwargs)
+        return updated_category
 
-    async def delete_category(self, filters: dict, **kwargs):
+    async def delete_category(self, filters: dict, **kwargs) -> DeleteResult:
         """
         Updates a category
         :param filters: A query that matches the document to delete.
         :param kwargs: Other parameters for delete such as session for transaction etc.
         """
-        await db.categories.delete_one(filter=filters, **kwargs)
+        deleted_category = await db.categories.delete_one(filter=filters, **kwargs)
+        return deleted_category

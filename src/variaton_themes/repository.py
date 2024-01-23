@@ -1,4 +1,6 @@
+from pymongo.results import InsertOneResult, UpdateResult, DeleteResult
 from typing import Optional
+
 from src.database import db
 
 class VariationThemeRepository:
@@ -84,7 +86,7 @@ class VariationThemeRepository:
 
         return variation_theme
 
-    async def create_variation_theme(self, data: dict, **kwargs) -> bool:
+    async def create_variation_theme(self, data: dict, **kwargs) -> InsertOneResult:
         """
         Create a new variation theme.
         Params:
@@ -96,21 +98,23 @@ class VariationThemeRepository:
 
         created_facet = await db.variation_themes.insert_one(data, **kwargs)
 
-        return created_facet.inserted_id is not None
+        return created_facet
 
-    async def update_variation_theme(self, filters: dict, data_to_update: dict, **kwargs):
+    async def update_variation_theme(self, filters: dict, data_to_update: dict, **kwargs) -> UpdateResult:
         """
             Updates variation theme with specified filters,
             :param filters - A query that matches the document to update
             :param data_to_update - new variation_theme properties and operations on them ($set and so on).
             :param kwargs: Other parameters for update such as session for transaction etc.
         """
-        await db.variation_themes.update_one(filter=filters, update=data_to_update, **kwargs)
+        updated_variation_theme = await db.variation_themes.update_one(filter=filters, update=data_to_update, **kwargs)
+        return updated_variation_theme
 
-    async def delete_variation_theme(self, filters: dict, **kwargs) -> None:
+    async def delete_variation_theme(self, filters: dict, **kwargs) -> DeleteResult:
         """
         Deletes variation theme with specified filters
         :param filters: - A query that matches the document to delete.
         :param kwargs: Other parameters for delete such as session for transaction etc.
         """
-        await db.variation_themes.delete_one(filter=filters, **kwargs)
+        deleted_variation_theme = await db.variation_themes.delete_one(filter=filters, **kwargs)
+        return deleted_variation_theme

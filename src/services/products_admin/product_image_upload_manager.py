@@ -42,7 +42,8 @@ class ProductImageUploadManager:
             image_urls_list = await upload_images_many_products(variation_ids, variation_images)
             # Update images URLs for the variations
             await self.product_repo.update_image_links(
-                variation_ids, [i.get("images") for i in image_urls_list]
+                [i.get("product_id") for i in image_urls_list],
+                [i.get("images") for i in image_urls_list]
             )
             if update_parent_images:
                 image_dict = {
@@ -100,4 +101,5 @@ class ProductImageUploadManager:
             process.start()
         else:
             # Otherwise, execute image uploading in the same process
-            await self._upload_images_multiple_products(parent_id, variation_ids, variation_images)
+            await self._upload_images_multiple_products(parent_id, variation_ids,
+                                                        variation_images, update_parent_images)

@@ -1,4 +1,6 @@
+from pymongo.results import InsertOneResult, UpdateResult, DeleteResult
 from typing import Optional
+
 from src.database import db
 
 
@@ -89,7 +91,7 @@ class FacetRepository:
 
         return facet
 
-    async def create_facet(self, data: dict, **kwargs) -> bool:
+    async def create_facet(self, data: dict, **kwargs) -> InsertOneResult:
         """
         Create a new facet.
         Params:
@@ -101,21 +103,23 @@ class FacetRepository:
 
         created_facet = await db.facets.insert_one(data, **kwargs)
 
-        return created_facet.inserted_id is not None
+        return created_facet
 
-    async def update_facet(self, filters: dict, data_to_update: dict, **kwargs) -> None:
+    async def update_facet(self, filters: dict, data_to_update: dict, **kwargs) -> UpdateResult:
         """
             Updates facet with specified filters,
             :param filters - A query that matches the document to update
             :param data_to_update - new facet properties and operations on them ($set and so on).
             :param kwargs: Other parameters for update such as session for transaction etc.
         """
-        await db.facets.update_one(filter=filters, update=data_to_update, **kwargs)
+        updated_facet = await db.facets.update_one(filter=filters, update=data_to_update, **kwargs)
+        return updated_facet
 
-    async def delete_facet(self, filters: dict, **kwargs) -> None:
+    async def delete_facet(self, filters: dict, **kwargs) -> DeleteResult:
         """
         Deletes facet with specified filters
         :param filters: - A query that matches the document to delete.
         :param kwargs: Other parameters for delete such as session for transaction etc.
         """
-        await db.facets.delete_one(filter=filters, **kwargs)
+        deleted_facet = await db.facets.delete_one(filter=filters, **kwargs)
+        return deleted_facet

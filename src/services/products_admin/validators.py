@@ -83,7 +83,7 @@ class ProductValidatorUpdate(ProductValidatorBase):
         self._validate_product_attrs()
         self._validate_product_attrs("extra_attrs", False)
 
-        # if product is not a parent or product and its variations don't have the same variations
+        # if product is not a parent or product and its variations don't have the same images
         if not self.extra_data.get("parent") or self.extra_data.get("same_images"):
             # then validate img operations
             await validate_image_ops(self.product.get("image_ops"), self.errors)

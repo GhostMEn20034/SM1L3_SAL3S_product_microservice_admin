@@ -80,16 +80,6 @@ class CreateProduct(BaseModel):
     # List of product variations
     variations: Optional[List[ProductVariationCreateProduct]]
 
-    # @root_validator
-    # def check_images_if_same_images(cls, values):
-    #     """
-    #     Raises error if there's no value AND (same_images is true OR has_variations is false)
-    #     """
-    #     if not values.get("images") and (values.get("same_images") or not values.get("has_variations")):
-    #         raise ValueError("Images required")
-    #     return values
-
-
     @validator("variation_theme")
     def check_variation_theme(cls, v, values):
         """

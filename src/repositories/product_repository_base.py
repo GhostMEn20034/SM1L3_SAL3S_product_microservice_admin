@@ -1,6 +1,7 @@
 from pymongo.errors import BulkWriteError
 from pymongo.results import InsertOneResult, InsertManyResult, UpdateResult, DeleteResult, BulkWriteResult
 from pymongo.operations import UpdateOne
+from pymongo import ReturnDocument
 from typing import Optional, Union
 from src.database import db
 from src.logger import logger
@@ -73,7 +74,7 @@ class ProductRepositoryBase:
         created_products = await db.products.insert_many(documents=data, **kwargs)
         return created_products
 
-    async def update_one_product(self, filters: dict, data_to_update: dict, **kwargs) -> UpdateResult:
+    async def update_one_product(self, filters: dict, data_to_update: Union[list[dict], dict], **kwargs) -> UpdateResult:
         """
             Updates product with specified filters,
             :param filters - A query that matches the document to update
@@ -125,4 +126,49 @@ class ProductRepositoryBase:
         :param kwargs: Other parameters for delete such as session for transaction etc.
         """
         deleted_product = await db.products.delete_many(filter=filters, **kwargs)
+        return deleted_product
+
+    async def find_and_update_one_product(self, filters: dict,
+                                          update: Union[list[dict], dict], projection: dict = None,
+                                          return_document: str = "before",
+                                          **kwargs
+                                          ) -> dict:
+        """
+        Update and return product with specified filters.
+        :param filters: A query that matches documents to update
+        :param update: list of dicts (Pipeline) or dict with new products'
+                               properties and operations on them ($set and so on).
+        :param projection: Dictionary with fields must be included in the result.
+        :param return_document: If "after", function will return document after update operation.
+                                Possible values are: "before", "after".
+                                If value is not correct it will be "before"
+        :param kwargs: Other parameters for update such as session for transaction, array_filters etc.
+        """
+        if not projection:
+            projection = {}
+
+        return_document_mapping = {
+            "before": ReturnDocument.BEFORE,
+            "after": ReturnDocument.AFTER,
+        }
+        return_document = return_document_mapping.get(return_document, ReturnDocument.BEFORE)
+
+        updated_product = await db.products.find_one_and_update(
+            filter=filters, update=update, projection=projection,
+            return_document=return_document ,**kwargs,
+        )
+
+        return updated_product
+
+    async def find_and_delete_one_product(self, filters: dict, projection: dict = None, **kwargs) -> dict:
+        """
+        Delete and return product with specified filters.
+        :param filters: A query that matches documents to delete
+        :param projection: Dictionary with fields must be included in the result.
+        :param kwargs: Other parameters for delete operation
+        """
+        if not projection:
+            projection = {}
+
+        deleted_product = await db.products.find_one_and_delete(filter=filters, projection=projection, **kwargs)
         return deleted_product

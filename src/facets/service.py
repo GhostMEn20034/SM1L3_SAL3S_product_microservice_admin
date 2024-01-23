@@ -24,7 +24,7 @@ class FacetService:
         # return True if there's inserted id, otherwise False
         created_facet = await self.repository.create_facet(data)
 
-        if not created_facet:
+        if not created_facet.inserted_id:
             raise HTTPException(status_code=400, detail="Facet not created")
 
     async def get_facets_for_choices(self) -> list:

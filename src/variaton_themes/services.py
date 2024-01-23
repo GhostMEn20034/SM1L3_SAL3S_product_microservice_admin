@@ -47,7 +47,7 @@ class VariationThemesService:
 
     async def create_variation_theme(self, data: dict):
         created_variation_theme = await self.repository.create_variation_theme(data)
-        if not created_variation_theme:
+        if not created_variation_theme.inserted_id:
             raise HTTPException(status_code=400, detail="Variation theme not created")
 
     async def delete_variation_theme(self, variation_theme_id: PyObjectId):

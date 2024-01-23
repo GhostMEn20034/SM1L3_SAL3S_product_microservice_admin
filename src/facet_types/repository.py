@@ -1,4 +1,6 @@
 from typing import Optional
+from pymongo.results import InsertOneResult, UpdateResult, DeleteResult
+
 from src.database import db
 
 
@@ -30,7 +32,7 @@ class FacetTypeRepository:
 
         return facet_types
 
-    async def create_facet_type(self, data: dict, **kwargs) -> bool:
+    async def create_facet_type(self, data: dict, **kwargs) -> InsertOneResult:
         """
             Create a new facet type.
             Params:
@@ -40,23 +42,24 @@ class FacetTypeRepository:
         if not data:
             raise ValueError("No data provided")
 
-        facet_type = await db.facet_types.insert_one(document=data, **kwargs)
+        inserted_facet_type = await db.facet_types.insert_one(document=data, **kwargs)
+        return inserted_facet_type
 
-        return facet_type.inserted_id is not None
-
-    async def update_facet_type(self, filters: dict, data_to_update: dict, **kwargs):
+    async def update_facet_type(self, filters: dict, data_to_update: dict, **kwargs) -> UpdateResult:
         """
             Updates facet with specified id,
             :param filters - A query that matches the document to update
             :param data_to_update - new facet properties and operations on them ($set and so on).
             :param kwargs: Other parameters for update such as session for transaction etc.
         """
-        await db.facet_types.update_one(filter=filters, update=data_to_update, **kwargs)
+        updated_facet_type = await db.facet_types.update_one(filter=filters, update=data_to_update, **kwargs)
+        return updated_facet_type
 
-    async def delete_facet_type(self, filters: dict, **kwargs):
+    async def delete_facet_type(self, filters: dict, **kwargs) -> DeleteResult:
         """
             Deletes facet type with the specified filters
             :param filters: - A query that matches the document to delete.
             :param kwargs: Other parameters for delete such as session for transaction etc.
         """
-        await db.facet_types.delete_one(filter=filters, **kwargs)
+        deleted_facet_type = await db.facet_types.delete_one(filter=filters, **kwargs)
+        return deleted_facet_type

@@ -10,12 +10,14 @@ from src.repositories.product_repository_base import ProductRepositoryBase
 class ProductAdminRepository(ProductRepositoryBase):
     async def update_image_links(self, product_ids: Union[List[ObjectId], ObjectId],
                                  images: Union[List[dict], dict],
-                                 same_images: bool = False):
+                                 same_images: bool = False, update_linked_products: bool = False):
         """
         Updates image links in products.
         :param product_ids: List of ObjectID or ObjectID. Products where image links will be updated.
         :param images: List of dicts or dict. Image links that will be inserted into the products.
         :param same_images: defines whether function should upload the same images to the products
+        :param update_linked_products: defines whether function should update images in the products
+        which use images from the specified product (from product id above)
         """
         # check if the input is a single product id or a list of product ids
         if isinstance(product_ids, list):
@@ -39,11 +41,24 @@ class ProductAdminRepository(ProductRepositoryBase):
                     ))
                 await self.update_many_products_bulk(operations, ordered=False)
         else:
-            # use the update_one method to update the image links for the single product
-            await self.update_one_product(
-                {"_id": product_ids},
-                {"$set": {"images": images}}
-            )
+            if update_linked_products:
+                filters = {
+                    "$or": [
+                        {"_id": product_ids},
+                        {"images.sourceProductId": product_ids}
+                    ]
+                }
+                data_to_update = {"images.main": images.get("main"),
+                                  "images.secondaryImages": images.get("secondaryImages")}
+                await self.update_many_products(filters, {"$set": data_to_update})
+            else:
+                filters = {"_id": product_ids}
+                data_to_update = {"images": images}
+                # use the update_one method to update the image links for the single product
+                await self.update_one_product(
+                    filters,
+                    {"$set": data_to_update}
+                )
 
     async def get_product_details(self, product_id: ObjectId) -> dict:
         """

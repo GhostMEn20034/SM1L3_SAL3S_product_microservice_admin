@@ -84,6 +84,21 @@ def is_list_unique(input_list: List) -> Optional[int]:
 
     return duplicate_index
 
+def different_dicts(list1: list[dict], list2: list[dict]):
+    """
+    Compares lists of dictionaries.
+    :return: A list of dictionaries from list1 that differ from those in list2.
+    """
+    differences = []
+    for dict1 in list1:
+        is_different = True
+        for dict2 in list2:
+            if dict1 == dict2:
+                is_different = False
+                break
+        if is_different:
+            differences.append(dict1)
+    return differences
 
 async def get_image_from_base64(base64_str: str) -> bytes:
     """
@@ -97,7 +112,7 @@ async def get_image_from_base64(base64_str: str) -> bytes:
 
 def async_worker(func, *args, **kwargs):
     """
-    Runs function asynchronously in sync environment
+    Runs asynchronous function in synchronous environment
     Params:
     :param func: async function to execute
     :param args: function's positional arguments

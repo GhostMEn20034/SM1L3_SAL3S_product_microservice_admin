@@ -34,7 +34,7 @@ async def product_list(page: int = fastapi.Query(1, ge=1, ),
 async def product_detail(product_id: PyObjectId, service: ProductAdminService = Depends(get_product_admin_service)):
     return await service.get_product_by_id(product_id)
 
-@router.put("/{product_id}")
+@router.put("/{product_id}", response_model=update.UpdateProductResponse)
 async def product_update(product_id: PyObjectId, data_to_update: update.UpdateProduct = Body(...),
                          service: ProductAdminService = Depends(get_product_admin_service)):
     return await service.update_product(product_id, data_to_update)

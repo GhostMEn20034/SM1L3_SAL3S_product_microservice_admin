@@ -1,5 +1,7 @@
 from typing import List, Optional, TypedDict, Union
-from pydantic import BaseModel, Field
+from bson import ObjectId
+from pydantic import BaseModel, Field, validator
+
 from src.products.schemes.base import Attr, BaseAttrs, ProductVariation
 from .create import ImagesCreateProduct
 from src.schemes import PyObjectId
@@ -84,6 +86,12 @@ class UpdateProduct(BaseModel):
     # List of variations to delete
     variations_to_delete: Optional[List[PyObjectId]]
 
+    @validator("attrs")
+    def validate_attrs(cls, v):
+        if v is not None and len(v) == 0:
+            raise ValueError("Attribute list must not be empty")
+        return v
+
 
 class ExtraProductDataUpdate(TypedDict):
     """
@@ -91,3 +99,20 @@ class ExtraProductDataUpdate(TypedDict):
     """
     parent: bool
     same_images: bool
+
+
+class UpdateProductResponse(BaseModel):
+    """
+    Represents product update response
+    """
+    # Identifier of product to update
+    product_id: PyObjectId
+    # If the product has variations (It is a parent product), the response can contain
+    # a list of identifiers of updated and inserted products
+    updated_variation_ids: Optional[List[PyObjectId]]
+    inserted_variation_ids: Optional[List[PyObjectId]]
+
+    class Config:
+        allow_population_by_field_name = True
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}

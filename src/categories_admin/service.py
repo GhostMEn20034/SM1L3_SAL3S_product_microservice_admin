@@ -122,7 +122,7 @@ class CategoryService:
         # insert category
         created_category = await self.repository.create_category({**data, **category_attrs})
         # if category was not created, then raise HTTP 404
-        if not created_category:
+        if not created_category.inserted_id:
             raise HTTPException(status_code=400, detail="Category not created")
 
     async def delete_category(self, category_id: ObjectId):
