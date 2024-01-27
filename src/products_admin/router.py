@@ -1,9 +1,11 @@
 import fastapi
 from fastapi import Body, Depends
+
 from src.schemes import PyObjectId
 from .schemes import create
 from .schemes import get
 from .schemes import update
+from .schemes.delete import DeleteProductRequest
 from .service import ProductAdminService
 from src.dependencies import get_product_admin_service
 
@@ -38,3 +40,12 @@ async def product_detail(product_id: PyObjectId, service: ProductAdminService = 
 async def product_update(product_id: PyObjectId, data_to_update: update.UpdateProduct = Body(...),
                          service: ProductAdminService = Depends(get_product_admin_service)):
     return await service.update_product(product_id, data_to_update)
+
+@router.delete("/{product_id}", status_code=fastapi.status.HTTP_204_NO_CONTENT)
+async def product_delete(product_id: PyObjectId, service: ProductAdminService = Depends(get_product_admin_service)):
+    await service.delete_one_product(product_id)
+
+@router.delete("/", status_code=fastapi.status.HTTP_204_NO_CONTENT)
+async def product_delete_many(delete_data: DeleteProductRequest = Body(...),
+                              service: ProductAdminService = Depends(get_product_admin_service)):
+    await service.delete_many_products(delete_data.product_ids)

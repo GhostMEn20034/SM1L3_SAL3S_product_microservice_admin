@@ -1,23 +1,20 @@
 from math import ceil
-from typing import Tuple, Optional, List, Dict, Union, Any
+from typing import List, Dict, Union, Any
 from bson import ObjectId
 from fastapi import HTTPException
 
 from src.categories_admin.repository import CategoryRepository
-from src.database import client
 from src.facet_types.repository import FacetTypeRepository
 from src.facets.repository import FacetRepository
-from src.utils import convert_decimal, different_dicts
+from src.utils import convert_decimal
 from src.variaton_themes.repository import VariationThemeRepository
-from src.services.products_admin.product_builder import ProductBuilder
 from .repository import ProductAdminRepository
 from .schemes.create import CreateProduct
 from .schemes.update import UpdateProduct
-from .utils import remove_product_attrs, set_attr_non_optional, form_data_to_update, get_var_theme_field_codes
 from src.services.products_admin.validators import ProductValidatorCreate, ProductValidatorUpdate
-from src.services.products_admin.product_image_upload_manager import ProductImageUploadManager
-from src.services.products_admin.image_operation_manager import ImageOperationManager
-from src.services.products_admin.variation_manager import VariationManager
+from src.services.products_admin.product_crud.product_creator import ProductCreator
+from src.services.products_admin.product_crud.product_modifier import ProductModifier
+from src.services.products_admin.product_crud.product_remover import ProductRemover
 
 
 class ProductAdminService:
@@ -30,133 +27,7 @@ class ProductAdminService:
         self.variation_theme_repo = variation_theme_repo
         self.facet_type_repo = facet_type_repo
 
-    async def _create_single_product(self, product_data: dict):
-        same_images = product_data.get("same_images", True)
-
-        product_builder = ProductBuilder(product_data)
-        image_upload_manager = ProductImageUploadManager(same_images,
-                                                         product_data.get("images"),
-                                                         product_repo=self.product_repo)
-        single_product_data = await product_builder.build_single_product()
-        # Create single product
-        inserted_single_product = await self.product_repo.create_one_product(single_product_data)
-        single_product_id = inserted_single_product.inserted_id
-        # Upload images in another process
-        await image_upload_manager.upload_images_one_product(single_product_id, another_process=True)
-        return single_product_id
-
-    async def _create_product_with_variations(self, product_data: dict,
-                                              session=None) -> Tuple[ObjectId, List[ObjectId]]:
-        same_images = product_data.get("same_images", True)
-        product_builder = ProductBuilder(product_data)
-        # Set "optional" property to False in each variations' attribute
-        for variation in product_data.get("variations"):
-            variation["attrs"] = await set_attr_non_optional(variation["attrs"])
-        # Build data for parent product
-        parent_data = await product_builder.build_single_product(parent=True)
-        # Create parent product
-        inserted_parent = await self.product_repo.create_one_product(parent_data, session=session)
-        parent_id = inserted_parent.inserted_id
-        # get variation theme field codes
-        field_codes = await get_var_theme_field_codes(product_data.get("variation_theme", {}))
-        # remove parent's attributes
-        product_data["attrs"] = await remove_product_attrs(product_data["attrs"], field_codes)
-        variation_manager = VariationManager(parent_id, self.product_repo, product_builder)
-        variation_ids, variation_images = await variation_manager.insert_variations(
-            parent_id, same_images, session)
-        await variation_manager.upload_variation_images(same_images, product_data.get("images"),
-                                                        variation_ids, variation_images, update_parent_images=True)
-        # return parent id and list of inserted products' ids
-        return parent_id, variation_ids
-
-    async def _update_product_with_variations(self, parent_id: ObjectId, data: dict,
-                                              product_before_update: dict, images: dict, session=None):
-        same_images = product_before_update.get("same_images")
-
-        variations_common_data = {**product_before_update, "for_sale": True, "is_filterable": True,
-                                  "variations": data.get("new_variations"),
-                                  "attrs": data.get("attrs", []),
-                                  "extra_attrs": data.get("extra_attrs", [])}
-        variation_manager = VariationManager(parent_id, self.product_repo, ProductBuilder(variations_common_data))
-        if data.get("variations_to_delete", []):
-            await variation_manager.delete_variations(data["variations_to_delete"])
-
-        inserted_ids = []
-        if data.get("new_variations"):
-            inserted_ids = await variation_manager.handle_variation_inserts(variations_common_data,
-                                                                            same_images, session)
-        # Get Attributes that have differences
-        different_attrs = different_dicts(variations_common_data["attrs"], product_before_update.get("attrs", []))
-        updated_variation_ids = await variation_manager.handle_variation_updates(
-            data.get("old_variations", []),
-            {
-                "attrs": different_attrs,
-                "extra_attrs": data.get("extra_attrs")
-            },
-            same_images,
-            images,
-            data.get("image_ops", {}),
-            inserted_ids,
-            session
-        )
-        return updated_variation_ids, inserted_ids
-
-    async def _create_product(self, product_data: dict) -> Tuple[ObjectId, Optional[List[ObjectId]]]:
-        """
-        Internal helper function to insert product(s) to db
-        :param product_data: VALIDATED product data to be inserted
-        """
-        product_data["for_sale"] = True
-        has_variations = product_data.get("has_variations", False)
-        # Set "optional" property in each product's attribute
-        product_data["attrs"] = await set_attr_non_optional(product_data["attrs"])
-
-        if has_variations:
-            async with (await client.start_session() as session):
-                async with session.start_transaction():
-                    parent_id, variation_ids = await self._create_product_with_variations(product_data, session)
-                    return parent_id, variation_ids
-
-        single_product_id = await self._create_single_product(product_data)
-        return single_product_id, None
-
-    async def _update_product(self, _id: ObjectId, data: dict,
-                              parent: bool) -> dict[str, Union[ObjectId, List[ObjectId]]]:
-        """
-        Internal helper function to update product(s) in db
-        :param _id: Product identifier.
-        :param data: VALIDATED new product data
-        :param parent: Whether product that will be updated is parent
-        """
-        data_to_update = form_data_to_update(data, parent)
-        # get a product in the state before modifying and update it
-        product_before_update = await self.product_repo.find_and_update_one_product(
-            {"_id": _id}, {"$set": data_to_update},
-            {"_id": 0, "name": 0, "price": 0, "stock": 0,
-             "discount_rate": 0, "tax_rate": 0, "max_order_qty": 0, "sku": 0, "external_id": 0},
-        )
-        images = product_before_update.pop("images", {})
-
-        if parent:
-            async with (await client.start_session() as session):
-                async with session.start_transaction():
-                    updated_ids, inserted_ids = await self._update_product_with_variations(
-                        _id, data, product_before_update, images, session
-                    )
-                    return {"product_id": _id, "updated_variation_ids": updated_ids,
-                            "inserted_variation_ids": inserted_ids}
-
-        update_linked_products = (not product_before_update.get("same_images", False)
-                                  and product_before_update.get("parent_id") is not None)
-
-        source_product_id = images.get("sourceProductId")
-
-        image_operation_manager = ImageOperationManager(_id if source_product_id is None else source_product_id,
-                                                        images, data.get("image_ops", {}), self.product_repo)
-        await image_operation_manager.update_images_one_product(update_linked_products ,another_process=True)
-        return {"product_id": _id, "updated_variation_ids": None, "inserted_variation_ids": None}
-
-    async def get_product_creation_essentials(self, category_id: ObjectId):
+    async def get_product_creation_essentials(self, category_id: ObjectId) -> Dict:
         """
         Returns essential data for product creation
         """
@@ -206,7 +77,7 @@ class ProductAdminService:
         if not category:
             raise HTTPException(status_code=400, detail="Invalid category specified")
 
-        product_validator = ProductValidatorCreate(product=data)
+        product_validator = ProductValidatorCreate(data, self.product_repo)
         # Validate product data
         validated_data, errors = await product_validator.validate()
         if errors:
@@ -214,10 +85,12 @@ class ProductAdminService:
 
         # convert all decimal fields into decimal128
         validated_data = convert_decimal(validated_data)
-        product_id, variation_ids = await self._create_product(product_data=validated_data)
+        product_creator = ProductCreator(self.product_repo)
+        product_id, variation_ids = await product_creator.create_product(validated_data)
         return {"product_id": product_id, "variation_ids": variation_ids}
 
-    async def update_product(self, product_id: ObjectId, data: UpdateProduct):
+    async def update_product(self, product_id: ObjectId,
+                             data: UpdateProduct) -> Dict[str, Union[ObjectId, List[ObjectId]]]:
         # Try to find a product
         product: dict = await self.product_repo \
             .get_one_product({"_id": product_id},
@@ -227,8 +100,10 @@ class ProductAdminService:
             raise HTTPException(status_code=404, detail="Product not found")
 
         # Initialize validator of product data to update
-        product_validator = ProductValidatorUpdate(product=data, extra_data={"same_images": product["same_images"],
-                                                                             "parent": product["parent"]})
+        product_validator = ProductValidatorUpdate(product=data,
+                                                   extra_data={"same_images": product["same_images"],
+                                                               "parent": product["parent"]},
+                                                   product_repo=self.product_repo)
         # Get validated product data and get errors
         validated_data, errors = await product_validator.validate()
         # If there are errors, then raise HTTP 400 to the client
@@ -238,10 +113,12 @@ class ProductAdminService:
         parent = product.get("parent", False)
         # convert all decimal fields into decimal128
         validated_data = convert_decimal(validated_data)
-        result = await self._update_product(product_id, validated_data, parent)
+
+        product_modifier = ProductModifier(self.product_repo)
+        result = await product_modifier.update_product(product_id, validated_data, parent)
         return result
 
-    async def get_product_list(self, page: int, page_size: int) -> dict:
+    async def get_product_list(self, page: int, page_size: int) -> Dict:
         """
         :param page: Page number.
         :param page_size: Number of products per page.
@@ -272,7 +149,7 @@ class ProductAdminService:
         }
         return result
 
-    async def get_product_by_id(self, product_id: ObjectId) -> dict[str, Any]:
+    async def get_product_by_id(self, product_id: ObjectId) -> Dict[str, Any]:
         """
         Returns product with the specified id if it exists and product variations if they are exist.
         Also, it returns facets, category, facet_types.
@@ -320,3 +197,28 @@ class ProductAdminService:
             "facet_types": facet_types,
         }
         return result
+
+    async def delete_one_product(self, product_id: ObjectId) -> int:
+        product = await self.product_repo.get_one_product(
+            {"_id": product_id},
+            {"parent": 1, "same_images": 1, "images": 1}
+        )
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+
+        product_remover = ProductRemover(self.product_repo)
+        deleted_count = await product_remover.delete_one_product(product)
+
+        return deleted_count
+
+    async def delete_many_products(self, product_ids: List[ObjectId]):
+        products = await self.product_repo.get_product_list(
+            {"_id": {"$in": product_ids}},
+         {"parent": 1, "same_images": 1, "images": 1})
+
+        if not products:
+            raise HTTPException(status_code=404, detail="Products with the specified ids are not found")
+
+        product_remover = ProductRemover(self.product_repo)
+        deleted_count = await product_remover.delete_many_products(products)
+        return deleted_count

@@ -127,17 +127,16 @@ class VariationManager:
                                                                              {"same_images": 1, "images": 1})
         deleted_variations = await self.product_repo.delete_many_products({"_id": {"$in": variation_ids}},
                                                                           session=session)
-
         for deleted_variation in variations_to_delete_data:
             if (deleted_variation.get("images", {}).get("sourceProductId") is None
-                    and deleted_variation.get("same_images", False)):
+                    and not deleted_variation.get("same_images", False)):
                 main_image = deleted_variation.get("images", {}).get("main")
 
                 secondary_images = deleted_variation["images"]["secondaryImages"] \
                     if deleted_variation.get("images",{}).get("secondaryImages", []) else []
 
                 objects_to_delete = ImageOperationManager. \
-                    form_a_list_of_objects_to_delete([*main_image, *secondary_images])
+                    form_a_list_of_objects_to_delete([main_image, *secondary_images])
                 await delete_many_files_in_s3(S3_BUCKET_NAME, objects_to_delete)
 
         return deleted_variations.deleted_count

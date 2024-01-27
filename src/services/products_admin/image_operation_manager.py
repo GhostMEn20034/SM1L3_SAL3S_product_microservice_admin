@@ -33,6 +33,7 @@ class ImageOperationManager:
     @staticmethod
     def form_a_list_of_objects_to_delete(images: list[str]) -> list[dict]:
         """
+        :param images: List of image urls.
         :return: List of dictionaries that contain image name and other metadata about image
         """
         objects_to_delete = []
@@ -75,6 +76,9 @@ class ImageOperationManager:
             # Remove secondary images which present in images_to_delete list
             self.images["secondaryImages"] = [image for image in self.images.get("secondaryImages")
                                               if image not in images_to_delete]
+            # if secondary images array is empty the assign secondaryImages to None
+            if not self.images["secondaryImages"]:
+                self.images["secondaryImages"] = None
             objects_to_delete = self.form_a_list_of_objects_to_delete(images_to_delete)
             response = await delete_many_files_in_s3(S3_BUCKET_NAME, objects_to_delete)
             deleted_count = sum(1 for _ in response["Deleted"])
