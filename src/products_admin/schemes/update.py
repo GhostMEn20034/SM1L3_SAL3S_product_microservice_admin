@@ -1,6 +1,6 @@
 from typing import List, Optional, TypedDict, Union
 from bson import ObjectId
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, constr
 
 from src.products.schemes.base import Attr, BaseAttrs, ProductVariation
 from .create import ImagesCreateProduct
@@ -73,6 +73,8 @@ class UpdateProduct(BaseModel):
     base_attrs: Optional[BaseAttrs]
     # List of the attributes to provide additional information
     extra_attrs: Optional[List[Attr]]
+    # keywords to improve the accuracy of product searching
+    search_terms: List[constr(min_length=1)]
     # Boolean value, that determines whether product for sale
     for_sale: Optional[bool]
     # Determines whether product's attributes can be used in filters
@@ -90,6 +92,12 @@ class UpdateProduct(BaseModel):
     def validate_attrs(cls, v):
         if v is not None and len(v) == 0:
             raise ValueError("Attribute list must not be empty")
+        return v
+
+    @validator("search_terms")
+    def check_search_terms(cls, v):
+        if len(v) > 30:
+            raise ValueError("There can be no more than 30 search terms")
         return v
 
 

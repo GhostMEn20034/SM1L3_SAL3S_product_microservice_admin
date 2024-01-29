@@ -1,15 +1,18 @@
 from math import ceil
 from fastapi.exceptions import HTTPException
 from bson import ObjectId
+
 from .repository import FacetRepository
+from src.products_admin.service import ProductAdminService
 
 
 class FacetService:
     """
     Responsible for facet business logic
     """
-    def __init__(self, repository: FacetRepository):
+    def __init__(self, repository: FacetRepository, product_service: ProductAdminService):
         self.repository = repository
+        self.product_service = product_service
 
     async def create_facet(self, data: dict) -> None:
         # try to find facet with the code "data.code"
@@ -59,12 +62,14 @@ class FacetService:
         return facet
 
     async def update_facet(self, facet_id: ObjectId, data_to_update: dict) -> None:
-        facet = await self.repository.get_one_facet({"_id": facet_id}, {"_id": 1})
+        facet = await self.repository.get_one_facet({"_id": facet_id}, {"_id": 1, "code": 1})
         # if there's no facet with the specified id raise HTTP 404 Not Found
         if not facet:
             raise HTTPException(status_code=404, detail="Facet not found")
         # Otherwise update facets
         await self.repository.update_facet({"_id": facet_id}, {"$set": data_to_update})
+        await self.product_service.update_attribute_explanation(facet.get("code"),
+                                                                data_to_update.get("explanation"))
 
     async def delete_facet(self, facet_id: ObjectId) -> None:
         facet = await self.repository.get_one_facet({"_id": facet_id}, {"_id": 1})

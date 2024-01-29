@@ -12,6 +12,7 @@ class ProductBuilder:
         extra_attrs = self.product_data["extra_attrs"] if self.product_data.get("extra_attrs") else []
         # Form a dictionary with the common product data
         common_data = {
+            "search_terms": self.product_data.get("search_terms", []),
             "for_sale": self.product_data.get("for_sale"),  # is product for sale
             "same_images": self.product_data.get("same_images"),  # Do parent product
             # and product variations have the same images

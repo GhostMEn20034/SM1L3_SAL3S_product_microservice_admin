@@ -58,6 +58,8 @@ class Attr(BaseModel):
     unit: Optional[str]
     # Attribute group, for example, SSD amount belongs to "storage" group
     group: Optional[str]
+    # A supplementary text that provides clarification, context, or additional details about a specific attribute
+    explanation: Optional[str]
 
 
 class Images(BaseModel):
@@ -95,6 +97,8 @@ class Product(ProductVariation):
     parent_id: Optional[PyObjectId]
     # Boolean value, that determines whether product for sale
     for_sale: bool
+    # keywords to improve the accuracy of product searching
+    search_terms: List[constr(min_length=1)]
     # Stores urls to product images
     images: Images
     # A category to which the product belongs

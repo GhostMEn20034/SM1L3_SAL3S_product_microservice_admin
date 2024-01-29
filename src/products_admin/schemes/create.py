@@ -1,13 +1,12 @@
-from pydantic import BaseModel, validator, root_validator
+from pydantic import BaseModel, validator, constr
 from typing import List, Union, Optional
+from bson import ObjectId
 
 from src.categories_admin.schemes import CategoryForChoices
 from src.facets.schemes import Facet
 from src.variaton_themes.schemes import VariationTheme
 from src.facet_types.schemes import FacetType
 from src.products.schemes.base import Attr, BaseAttrs, ProductVariation, VariationThemeInProduct
-
-from bson import ObjectId
 from src.schemes import PyObjectId
 
 
@@ -65,6 +64,8 @@ class CreateProduct(BaseModel):
     base_attrs: BaseAttrs
     # List of the attributes to provide additional information
     extra_attrs: Optional[List[Attr]]
+    # keywords to improve the accuracy of product searching
+    search_terms: List[constr(min_length=1)]
     # Category to which the product belongs
     category: PyObjectId
     # determines whether product has variations
@@ -83,7 +84,7 @@ class CreateProduct(BaseModel):
     @validator("variation_theme")
     def check_variation_theme(cls, v, values):
         """
-        Raises error if has_variations is true and there's no variation theme
+        Raises an error if the has_variations field is true and there's no variation theme
         """
         if values.get("has_variations") and not v:
             raise ValueError("Variation theme required")
@@ -92,12 +93,17 @@ class CreateProduct(BaseModel):
     @validator("variations")
     def check_variations(cls, v, values):
         """
-        Raises error if has_variations is true and there are no product variations
+        Raises an error if the has_variations field is true and there are no product variations
         """
         if values.get("has_variations") and not v:
             raise ValueError("Variations required")
         return v
 
+    @validator("search_terms")
+    def check_search_terms(cls, v):
+        if len(v) > 30:
+            raise ValueError("There can be no more than 30 search terms")
+        return v
 
     class Config:
         allow_population_by_field_name = True

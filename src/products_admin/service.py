@@ -222,3 +222,10 @@ class ProductAdminService:
         product_remover = ProductRemover(self.product_repo)
         deleted_count = await product_remover.delete_many_products(products)
         return deleted_count
+
+    async def update_attribute_explanation(self, code: str, explanation: str) -> int:
+        updated_products = await self.product_repo.update_many_products(
+            {"attrs": {"$elemMatch": {"code": code}}},
+            {"$set": {"attrs.$[elem].explanation": explanation}},
+            array_filters=[{"elem.code": code}])
+        return updated_products.modified_count

@@ -23,6 +23,7 @@ class Facet(FacetBase):
     """Detail facet representation"""
     values: Optional[List[Any]]
     categories: Union[List[PyObjectId], str]
+    explanation: Optional[str]
     units: Optional[List[str]]
 
     class Config:
@@ -61,6 +62,7 @@ class FacetUpdate(BaseModel):
     optional: bool
     show_in_filters: bool
     categories: Union[List[PyObjectId], str]
+    explanation: Optional[str]
     units: Optional[List[str]]
     values: Optional[List[Any]]
 
@@ -87,6 +89,7 @@ class FacetCreate(BaseModel):
     type: constr(min_length=1) = Field(...)
     values: Optional[List[Any]]
     categories: Union[List[PyObjectId], str]
+    explanation: Optional[str]
     units: Optional[List[str]]
     optional: bool
     show_in_filters: bool

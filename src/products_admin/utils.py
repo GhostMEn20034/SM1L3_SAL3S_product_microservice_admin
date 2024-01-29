@@ -110,6 +110,7 @@ def form_data_to_update(product_data: dict, parent: bool):
         **product_data.get("base_attrs", {}),
         "attrs": product_data.get("attrs", []),
         "extra_attrs": product_data.get("extra_attrs", []),
+        "search_terms": product_data.get("search_terms", []),
     }
 
     if not parent:

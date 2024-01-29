@@ -18,10 +18,6 @@ def get_facet_type_service() -> FacetTypeService:
     repository = FacetTypeRepository()
     return FacetTypeService(repository)
 
-async def get_facet_service() -> FacetService:
-    repository = FacetRepository()
-    return FacetService(repository)
-
 async def get_variation_theme_service() -> VariationThemesService:
     repository = VariationThemeRepository()
     return VariationThemesService(repository)
@@ -33,3 +29,8 @@ async def get_product_admin_service() -> ProductAdminService:
     variation_theme_repo = VariationThemeRepository()
     facet_type_repo = FacetTypeRepository()
     return ProductAdminService(product_repo, category_repo, facet_repo, variation_theme_repo, facet_type_repo)
+
+async def get_facet_service() -> FacetService:
+    product_service = await get_product_admin_service()
+    repository = FacetRepository()
+    return FacetService(repository, product_service)
