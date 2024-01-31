@@ -3,7 +3,7 @@ from fastapi import Depends
 
 from .services import VariationThemesService
 from . import schemes
-from src.schemes import PyObjectId
+from src.schemes.py_object_id import PyObjectId
 from src.dependencies import get_variation_theme_service
 
 router = fastapi.APIRouter(

@@ -1,7 +1,7 @@
 import fastapi
 from fastapi import Body, Depends
 
-from src.schemes import PyObjectId
+from src.schemes.py_object_id import PyObjectId
 from .schemes import create
 from .schemes import get
 from .schemes import update
@@ -13,7 +13,6 @@ router = fastapi.APIRouter(
     prefix="/admin/products",
     tags=["Products-admin"]
 )
-
 
 @router.get("/create", response_model=create.ProductCreateForm)
 async def product_create_form(category_id: PyObjectId,

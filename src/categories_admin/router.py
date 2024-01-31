@@ -4,7 +4,7 @@ from fastapi import Depends
 from .service import CategoryService
 from . import schemes
 from src.dependencies import get_category_service
-from src.schemes import PyObjectId
+from src.schemes.py_object_id import PyObjectId
 
 router = fastapi.APIRouter(
     prefix="/admin/categories",

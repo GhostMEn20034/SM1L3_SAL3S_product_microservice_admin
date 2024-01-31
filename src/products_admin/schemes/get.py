@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, constr, condecimal
 
 from src.facets.schemes import Facet
 from src.products.schemes.base import Product, BaseAttrs, Images, Attr
-from src.schemes import PyObjectId
+from src.schemes.py_object_id import PyObjectId
 
 
 class ProductAdmin(BaseModel):

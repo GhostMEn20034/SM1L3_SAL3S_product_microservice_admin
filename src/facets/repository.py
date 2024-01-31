@@ -83,7 +83,6 @@ class FacetRepository:
         :param projection: - Dictionary with fields must be included in the result
         :param kwargs: Other parameters such as session for transaction etc.
         """
-        # If projection is not specified, then set projection to empty dict
         if projection is None:
             projection = {}
 

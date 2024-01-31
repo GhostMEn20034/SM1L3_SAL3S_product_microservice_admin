@@ -1,6 +1,6 @@
 from typing import List
 from pydantic import BaseModel
-from src.schemes import PyObjectId
+from src.schemes.py_object_id import PyObjectId
 
 
 class DeleteProductRequest(BaseModel):

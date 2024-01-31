@@ -1,5 +1,5 @@
 from bson import ObjectId
-from src.schemes import PyObjectId
+from src.schemes.py_object_id import PyObjectId
 from typing import List, Union
 from pydantic import BaseModel, Field ,constr, validator
 

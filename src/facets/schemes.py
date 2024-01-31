@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field, constr, validator
 from typing import List, Any, Optional, Union
 from bson import ObjectId
 import fastapi
-from src.schemes import PyObjectId
+from src.schemes.py_object_id import PyObjectId
 
 
 

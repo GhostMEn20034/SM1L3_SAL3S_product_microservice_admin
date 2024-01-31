@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, condecimal, constr, conint, Field, validator
 
-from src.schemes import PyObjectId
+from src.schemes.py_object_id import PyObjectId
 from src.variaton_themes.schemes import VariationThemeFilter
 
 

@@ -7,7 +7,7 @@ from src.facets.schemes import Facet
 from src.variaton_themes.schemes import VariationTheme
 from src.facet_types.schemes import FacetType
 from src.products.schemes.base import Attr, BaseAttrs, ProductVariation, VariationThemeInProduct
-from src.schemes import PyObjectId
+from src.schemes.py_object_id import PyObjectId
 
 
 class FacetCreateForm(Facet):

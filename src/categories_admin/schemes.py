@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pydantic import BaseModel, Field, validator
-from src.schemes import PyObjectId
+from src.schemes.py_object_id import PyObjectId
 from bson import ObjectId
 from typing import Union, List, Optional
 

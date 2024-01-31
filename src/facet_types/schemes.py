@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from src.schemes import PyObjectId
+from src.schemes.py_object_id import PyObjectId
 from bson import ObjectId
 
 class FacetType(BaseModel):

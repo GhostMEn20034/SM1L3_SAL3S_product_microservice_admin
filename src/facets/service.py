@@ -10,6 +10,7 @@ class FacetService:
     """
     Responsible for facet business logic
     """
+
     def __init__(self, repository: FacetRepository, product_service: ProductAdminService):
         self.repository = repository
         self.product_service = product_service
@@ -24,7 +25,6 @@ class FacetService:
                 status_code=400,
                 detail={"code": f"Facet with {data.get('code')} code already exists"}
             )
-        # return True if there's inserted id, otherwise False
         created_facet = await self.repository.create_facet(data)
 
         if not created_facet.inserted_id:
@@ -36,7 +36,7 @@ class FacetService:
     async def get_facets(self, filters: dict, page: int, page_size: int) -> dict:
         facets = await self.repository.get_facet_list_with_facets_count(filters, page, page_size)
         # If there are no results
-        # then return default result
+        # then return default response
         if not facets.get("result"):
             result = {
                 "result": [],
@@ -48,7 +48,7 @@ class FacetService:
 
         result = {
             "result": facets.get("result"),
-            "page_count": ceil(facets_count / page_size), # Calculating count of pages
+            "page_count": ceil(facets_count / page_size),
         }
         # return result
         return result

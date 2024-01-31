@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field, validator, constr
 
 from src.products.schemes.base import Attr, BaseAttrs, ProductVariation
 from .create import ImagesCreateProduct
-from src.schemes import PyObjectId
+from src.schemes.py_object_id import PyObjectId
 
 
 class ImagesUpdateProduct(ImagesCreateProduct):

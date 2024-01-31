@@ -1,7 +1,7 @@
 from math import ceil
 from fastapi.exceptions import HTTPException
 from .repository import VariationThemeRepository
-from src.schemes import PyObjectId
+from src.schemes.py_object_id import PyObjectId
 
 class VariationThemesService:
     """

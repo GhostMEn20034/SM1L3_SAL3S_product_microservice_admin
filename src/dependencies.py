@@ -4,6 +4,8 @@ from src.facet_types.repository import FacetTypeRepository
 from src.facet_types.service import FacetTypeService
 from src.facets.repository import FacetRepository
 from src.facets.service import FacetService
+from src.synonyms.repository import SynonymRepository
+from src.synonyms.service import SynonymService
 from src.variaton_themes.repository import VariationThemeRepository
 from src.variaton_themes.services import VariationThemesService
 from src.products_admin.repository import ProductAdminRepository
@@ -14,13 +16,16 @@ async def get_category_service() -> CategoryService:
     repository = CategoryRepository()
     return CategoryService(repository)
 
+
 def get_facet_type_service() -> FacetTypeService:
     repository = FacetTypeRepository()
     return FacetTypeService(repository)
 
+
 async def get_variation_theme_service() -> VariationThemesService:
     repository = VariationThemeRepository()
     return VariationThemesService(repository)
+
 
 async def get_product_admin_service() -> ProductAdminService:
     product_repo = ProductAdminRepository()
@@ -30,7 +35,13 @@ async def get_product_admin_service() -> ProductAdminService:
     facet_type_repo = FacetTypeRepository()
     return ProductAdminService(product_repo, category_repo, facet_repo, variation_theme_repo, facet_type_repo)
 
+
 async def get_facet_service() -> FacetService:
     product_service = await get_product_admin_service()
     repository = FacetRepository()
     return FacetService(repository, product_service)
+
+
+async def get_synonym_service() -> SynonymService:
+    repository = SynonymRepository()
+    return SynonymService(repository)
