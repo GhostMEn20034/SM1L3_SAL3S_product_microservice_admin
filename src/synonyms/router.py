@@ -1,5 +1,3 @@
-from typing import List
-
 import fastapi
 
 from .schemes.get import SynonymListResponse, SynonymDetailResponse
@@ -11,7 +9,7 @@ from src.schemes.py_object_id import PyObjectId
 
 router = fastapi.APIRouter(
     prefix='/admin/synonyms',
-    tags=["Facets"]
+    tags=["Synonyms"]
 )
 
 

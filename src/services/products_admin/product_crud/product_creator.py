@@ -64,6 +64,8 @@ class ProductCreator:
         has_variations = product_data.get("has_variations", False)
         # Set "optional" property in each product's attribute
         product_data["attrs"] = await set_attr_non_optional(product_data["attrs"])
+        # Trim All Search Terms
+        product_data["search_terms"]: List[str] = [i.strip() for i in product_data["search_terms"]]
 
         if has_variations:
             async with (await client.start_session() as session):

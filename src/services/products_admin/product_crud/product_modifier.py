@@ -63,6 +63,10 @@ class ProductModifier:
         """
         data_to_update = form_data_to_update(data, parent)
         # get a product in the state before modifying and update it
+
+        # Trim All Search Terms
+        data_to_update["search_terms"] = [i.strip() for i in data_to_update["search_terms"]]
+
         product_before_update = await self.product_repo.find_and_update_one_product(
             {"_id": _id}, {"$set": data_to_update},
             {"_id": 0, "name": 0, "price": 0, "stock": 0,

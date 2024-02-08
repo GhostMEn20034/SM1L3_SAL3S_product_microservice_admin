@@ -53,12 +53,6 @@ class SynonymRepository:
                 "$facet": {
                     "result": [
                         {
-                            "$project": {
-                                "values": 0,
-                                "categories": 0
-                            }
-                        },
-                        {
                             "$skip": (page - 1) * page_size
                         },
                         {

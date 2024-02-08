@@ -1,6 +1,8 @@
 from __future__ import annotations
 from decimal import Decimal
 from typing import Optional, List, Dict
+
+import fastapi
 from bson import ObjectId
 from pydantic import BaseModel, Field, constr, condecimal
 
@@ -82,3 +84,37 @@ class ProductDetailResponse(BaseModel):
         arbitrary_types_allowed = True  # required for the _id
         json_encoders = {ObjectId: str}
 
+
+class ProductSearchFilters(BaseModel):
+    category: Optional[List[PyObjectId]] = Field(fastapi.Query([]))
+    sku: Optional[str]
+
+    class Config:
+        allow_population_by_field_name = True
+        arbitrary_types_allowed = True  # required for the _id
+        json_encoders = {ObjectId: str}
+
+
+class ProductSearchResult(BaseModel):
+    """
+    Each element in product search result
+    """
+    id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
+    name: constr(min_length=1)
+    price: condecimal(ge=Decimal(0), decimal_places=2)
+    discount_rate: Optional[condecimal(gt=Decimal(0), max_digits=3, decimal_places=2)]
+    sku: constr(min_length=1)
+
+
+class ProductSearchResponse(BaseModel):
+    """
+    Represents response of the product search
+    """
+    products: List[ProductSearchResult]
+    page_count: int
+    items_count: int
+
+    class Config:
+        allow_population_by_field_name = True
+        arbitrary_types_allowed = True  # required for the _id
+        json_encoders = {ObjectId: str}

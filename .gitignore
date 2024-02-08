@@ -17,6 +17,8 @@ Pipfile.lock
 env3.*
 env
 .env
+.env.dev
+.env.prod
 docs_build
 site_build
 venv

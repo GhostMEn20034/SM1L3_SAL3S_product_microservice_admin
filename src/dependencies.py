@@ -10,6 +10,8 @@ from src.variaton_themes.repository import VariationThemeRepository
 from src.variaton_themes.services import VariationThemesService
 from src.products_admin.repository import ProductAdminRepository
 from src.products_admin.service import ProductAdminService
+from src.events_admin.repository import EventRepository
+from src.events_admin.service import EventAdminService
 
 
 async def get_category_service() -> CategoryService:
@@ -45,3 +47,9 @@ async def get_facet_service() -> FacetService:
 async def get_synonym_service() -> SynonymService:
     repository = SynonymRepository()
     return SynonymService(repository)
+
+
+async def get_event_admin_service() -> EventAdminService:
+    repository = EventRepository()
+    product_service = await get_product_admin_service()
+    return EventAdminService(repository, product_service)

@@ -27,9 +27,16 @@ async def product_create(product: create.CreateProduct = Body(...),
 
 @router.get("/", response_model=get.ProductListResponse)
 async def product_list(page: int = fastapi.Query(1, ge=1, ),
-                       page_size: int = fastapi.Query(10, ge=0),
+                       page_size: int = fastapi.Query(10, ge=1),
                        service: ProductAdminService = Depends(get_product_admin_service)):
     return await service.get_product_list(page, page_size)
+
+@router.get("/search", response_model=get.ProductSearchResponse)
+async def product_search_by_name(name: str = "", page: int = fastapi.Query(1, ge=1, ),
+                                 page_size: int = fastapi.Query(10, ge=1),
+                                 filters: get.ProductSearchFilters = Depends(get.ProductSearchFilters),
+                                 service: ProductAdminService = Depends(get_product_admin_service)):
+    return await service.search_product(name, filters, page, page_size)
 
 @router.get("/{product_id}", response_model=get.ProductDetailResponse)
 async def product_detail(product_id: PyObjectId, service: ProductAdminService = Depends(get_product_admin_service)):

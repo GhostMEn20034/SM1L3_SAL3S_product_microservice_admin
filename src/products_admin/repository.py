@@ -1,9 +1,10 @@
-from typing import Union, List
+from typing import Union, List, Optional
 
 from bson import ObjectId
 from pymongo.operations import UpdateOne
 
 from src.database import db
+from src.settings import ATLAS_SEARCH_INDEX_NAME
 from src.repositories.product_repository_base import ProductRepositoryBase
 
 
@@ -248,3 +249,72 @@ class ProductAdminRepository(ProductRepositoryBase):
         ]
         product_list = await db.products.aggregate(pipeline=pipeline).to_list(length=None)
         return product_list[0] if product_list else {}
+
+    async def search_products_by_name(self, name: str, filters: Optional[dict] = None,
+                                      projection: Optional[dict] = None,
+                                      page: int = 1, page_size: int = 15, **kwargs) -> dict:
+        """
+        Search products by the name
+        Params:
+        :param name: Product name by which to search.
+        :param filters: - A query that matches documents.
+        :param projection: - Dictionary with fields must be included in the result.
+        :param page: page number
+        :param page_size: count of items per page.
+        :return: Products, their variations and count of products.
+        """
+
+        if not filters:
+            filters = {}
+
+        if not projection:
+            projection = {}
+
+        product_pipeline = []
+        main_pipeline = []
+        if name:
+            main_pipeline.append(
+                {
+                    "$search": {
+                        "index": ATLAS_SEARCH_INDEX_NAME,
+                        "autocomplete": {
+                            "path": "name",
+                            "query": name.strip(),
+                        },
+                    }
+                },
+            )
+
+        product_pipeline.extend([
+            {"$project": projection},
+            {
+                "$skip": (page - 1) * page_size
+            },
+            {
+                "$limit": page_size
+            },
+        ])
+
+        main_pipeline.extend([
+            {"$match": filters},
+            {"$facet": {
+                "items": product_pipeline,
+                "total_count": [
+                    {"$count": "count"},
+                ]
+            }},
+            {
+                # Deconstruct a total_count array to a single value
+                "$unwind": "$total_count"
+            },
+            {
+                "$project": {
+                    "items": 1,
+                    # get a count of products
+                    "count": "$total_count.count"
+                }
+            }
+        ])
+
+        found_products = await db.products.aggregate(pipeline=main_pipeline, **kwargs).to_list(length=None)
+        return found_products[0] if found_products else {}

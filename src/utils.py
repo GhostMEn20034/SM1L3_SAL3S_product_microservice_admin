@@ -3,7 +3,10 @@ import base64
 from decimal import Decimal
 from bson.decimal128 import Decimal128
 from typing import Union, List, Optional
+from pydantic import ValidationError
+
 from src.settings import ALLOWED_IMAGE_TYPE
+from src.schemes.url_validator import UrlValidator
 
 async def validate_images(images: Union[str, List[str]], many: bool = False):
     """
@@ -14,7 +17,6 @@ async def validate_images(images: Union[str, List[str]], many: bool = False):
     """
     # dict that stores image errors
     errors = {}
-
 
     def check_image_size_and_type(image: str, index):
         """
@@ -119,4 +121,12 @@ def async_worker(func, *args, **kwargs):
     :param kwargs: function's keyword arguments
     """
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(func(*args, **kwargs))
+    result = loop.run_until_complete(func(*args, **kwargs))
+    return result
+
+def is_valid_url(url: str) -> bool:
+    try:
+        UrlValidator(url=url)
+        return True
+    except ValidationError:
+        return False

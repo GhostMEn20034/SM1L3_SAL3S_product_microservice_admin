@@ -1,0 +1,7 @@
+.env
+.env.dev
+.env.prod
+venv
+.gitignore
+.git
+README.md

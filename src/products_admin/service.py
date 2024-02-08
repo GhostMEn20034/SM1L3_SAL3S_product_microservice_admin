@@ -1,6 +1,8 @@
+from decimal import Decimal
 from math import ceil
-from typing import List, Dict, Union, Any
-from bson import ObjectId
+from typing import List, Dict, Union, Any, Optional
+from pymongo.operations import UpdateOne
+from bson import ObjectId, Decimal128
 from fastapi import HTTPException
 
 from src.categories_admin.repository import CategoryRepository
@@ -10,11 +12,13 @@ from src.utils import convert_decimal
 from src.variaton_themes.repository import VariationThemeRepository
 from .repository import ProductAdminRepository
 from .schemes.create import CreateProduct
+from .schemes.get import ProductSearchFilters
 from .schemes.update import UpdateProduct
 from src.services.products_admin.validators import ProductValidatorCreate, ProductValidatorUpdate
 from src.services.products_admin.product_crud.product_creator import ProductCreator
 from src.services.products_admin.product_crud.product_modifier import ProductModifier
 from src.services.products_admin.product_crud.product_remover import ProductRemover
+from src.services.products_admin.filters.filter_creator import ProductsFilterCreatorAdmin
 
 
 class ProductAdminService:
@@ -129,22 +133,16 @@ class ProductAdminService:
             # If there are no products, then
             # return empty list, page count 0, items count 0
             return {
-                # list of products
                 "products": [],
-                # Count of pages
                 "page_count": 1,
-                # Count of products
                 "items_count": 0,
             }
         # otherwise, return product list, product count, page count from query
-        products_count = product_list.get("count", 0)
+        products_count = product_list.get("count")
 
         result = {
-            # list of products
             "products": product_list.get("items", []),
-            # Count of pages
             "page_count": ceil(products_count / page_size),
-            # Count of products
             "items_count": products_count,
         }
         return result
@@ -175,7 +173,6 @@ class ProductAdminService:
         # get facet types
         facet_types = await self.facet_type_repo.get_facet_type_list({"value": {"$ne": "list"}},
                                                                      {"_id": 0, })
-        # If product is a parent
         if product.get("parent"):
             # get variation theme
             variation_theme = dict(product.get("variation_theme"))
@@ -195,6 +192,26 @@ class ProductAdminService:
             "variation_theme": variation_theme,
             "category": category,
             "facet_types": facet_types,
+        }
+        return result
+
+    async def search_product(self, name: str, filters: ProductSearchFilters, page: int, page_size: int) -> dict:
+        filters = await ProductsFilterCreatorAdmin.generate_search_product_filters(filters)
+        product_list = await self.product_repo.search_products_by_name(
+            name, {**filters, "parent": False},
+            projection={"name": 1, "price": 1, "discount_rate": 1, "sku": 1},
+            page=page, page_size=page_size
+        )
+        if not product_list:
+            # If there are no products, then
+            # return empty list, page count 0, items count 0
+            return {"products": [], "page_count": 1, "items_count": 0}
+        # otherwise, return product list, product count, page count from query
+        products_count = product_list.get("count")
+        result = {
+            "products": product_list.get("items", []),
+            "page_count": ceil(products_count / page_size),
+            "items_count": products_count,
         }
         return result
 
@@ -228,4 +245,31 @@ class ProductAdminService:
             {"attrs": {"$elemMatch": {"code": code}}},
             {"$set": {"attrs.$[elem].explanation": explanation}},
             array_filters=[{"elem.code": code}])
+        return updated_products.modified_count
+
+    async def set_product_discounts(self, product_ids: List[ObjectId],
+                                       discounts: Optional[List[Union[Decimal, Decimal128]]] = None):
+        """
+        Sets product discounts for the specified products
+        :param product_ids: List of product ids where the method need to update discounts
+        :param discounts: List of product discounts which the method need to apply to the products.
+        If not provided, all products listed will not have any discount.
+        :return: Count of updated products
+        """
+        if discounts is None:
+            updated_products = await self.product_repo.update_many_products({"_id": {"$in": product_ids}},
+                                                         {"$set": {"discount_rate": None}})
+            return updated_products.modified_count
+
+        if len(product_ids) != len(discounts):
+            return 0
+
+        converted_discounts = convert_decimal({"discounts": discounts})
+
+        update_operations = []
+        for product_id, discount in zip(product_ids, converted_discounts["discounts"]):
+            update_operations.append(UpdateOne({"_id": product_id},
+                                               {"$set": {"discount_rate": discount}}))
+
+        updated_products = await self.product_repo.update_many_products_bulk(update_operations)
         return updated_products.modified_count
