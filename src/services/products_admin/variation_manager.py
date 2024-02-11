@@ -8,6 +8,7 @@ from .product_image_upload_manager import ProductImageUploadManager
 from .image_operation_manager import ImageOperationManager
 from .product_builder import ProductBuilder
 from src.products_admin.utils import get_var_theme_field_codes, remove_product_attrs
+from src.services.products_admin.replication.create_variations_replica import create_variations_replica
 from src.services.upload_images import delete_many_files_in_s3
 from src.settings import S3_BUCKET_NAME
 
@@ -37,7 +38,8 @@ class VariationManager:
                                                                    another_process=another_process)
 
     async def insert_variations(self, parent_id: ObjectId,
-                                same_images: bool = False, session=None) -> Tuple[List[ObjectId], Optional[List[dict]]]:
+                                same_images: bool = False, session=None) -> (
+            Tuple)[List[ObjectId], Optional[List[dict]], List[dict]]:
         """
         Insert new product variations.
         :param parent_id: Identifier of the parent product
@@ -49,7 +51,14 @@ class VariationManager:
         # Insert product variations
         inserted_variations = await self.product_repo.create_many_products(variation_data, session=session)
         variation_ids = inserted_variations.inserted_ids
-        return variation_ids, variation_images
+
+        image_sources = None
+        if not same_images:
+            image_sources = [image.get('sourceProductId') for image in variation_images]
+
+        replicated_variations = await create_variations_replica(variation_ids, variation_data, image_sources)
+
+        return variation_ids, variation_images, replicated_variations
 
     async def _update_variations(self, variations: List[dict], extra_data_to_update: dict,
                                  session=None) -> List[ObjectId]:
@@ -69,7 +78,7 @@ class VariationManager:
             extra_data_to_update.update(set_operator_data)
 
         for variation in variations:
-            variation_id = variation.pop("_id", None)
+            variation_id = variation.pop("_id")
             if variation_id:
                 operation = UpdateOne(
                     {"_id": variation_id, "parent_id": self.parent_id},
@@ -89,7 +98,8 @@ class VariationManager:
         return updated_variation_ids
 
     async def handle_variation_inserts(self, variations_common_data: dict,
-                                       same_images: bool, session=None):
+                                       same_images: bool,
+                                       session=None) -> Tuple[List[ObjectId], List[dict]]:
         """
         Handles inserting new variations into DB for EXISTED variations
         """
@@ -98,10 +108,11 @@ class VariationManager:
         field_codes = await get_var_theme_field_codes(variations_common_data.get("variation_theme", {}))
         # remove parent's attributes
         variations_common_data["attrs"] = await remove_product_attrs(variations_common_data["attrs"], field_codes)
-        inserted_ids, variation_images = await self.insert_variations(self.parent_id, same_images, session)
+        inserted_ids, variation_images, replicated_variations = await self.insert_variations(self.parent_id,
+                                                                                             same_images, session)
         if not same_images:
             await self.upload_variation_images(False, {}, inserted_ids, variation_images)
-        return inserted_ids
+        return inserted_ids, replicated_variations
 
     async def handle_variation_updates(self, old_variations: List[dict], extra_data_to_update: dict, same_images: bool,
                                        images: dict, image_ops: dict, inserted_ids: List[ObjectId], session=None):
@@ -133,7 +144,7 @@ class VariationManager:
                 main_image = deleted_variation.get("images", {}).get("main")
 
                 secondary_images = deleted_variation["images"]["secondaryImages"] \
-                    if deleted_variation.get("images",{}).get("secondaryImages", []) else []
+                    if deleted_variation.get("images", {}).get("secondaryImages", []) else []
 
                 objects_to_delete = ImageOperationManager. \
                     form_a_list_of_objects_to_delete([main_image, *secondary_images])

@@ -7,6 +7,10 @@ from src.products_admin.utils import set_attr_non_optional, get_var_theme_field_
 from src.services.products_admin.product_builder import ProductBuilder
 from src.services.products_admin.product_image_upload_manager import ProductImageUploadManager
 from src.services.products_admin.variation_manager import VariationManager
+from src.services.products_admin.replication.replicate_products import (
+    replicate_single_created_product,
+    replicate_created_variations
+)
 
 
 class ProductCreator:
@@ -27,6 +31,8 @@ class ProductCreator:
         # Create single product
         inserted_single_product = await self.product_repo.create_one_product(single_product_data)
         single_product_id = inserted_single_product.inserted_id
+        # Replicate created product
+        await replicate_single_created_product({"_id": single_product_id, **single_product_data})
         # Upload images in another process
         await image_upload_manager.upload_images_one_product(single_product_id, another_process=True)
         return single_product_id
@@ -47,9 +53,13 @@ class ProductCreator:
         field_codes = await get_var_theme_field_codes(product_data.get("variation_theme", {}))
         # remove parent's attributes
         product_data["attrs"] = await remove_product_attrs(product_data["attrs"], field_codes)
+        # insert variations to db
         variation_manager = VariationManager(parent_id, self.product_repo, product_builder)
-        variation_ids, variation_images = await variation_manager.insert_variations(
+        variation_ids, variation_images, replicated_variations = await variation_manager.insert_variations(
             parent_id, same_images, session)
+        # Replicate variations for other microservices
+        await replicate_created_variations(replicated_variations)
+
         await variation_manager.upload_variation_images(same_images, product_data.get("images"),
                                                         variation_ids, variation_images, update_parent_images=True)
         # return parent id and list of inserted products' ids

@@ -3,6 +3,11 @@ from bson import ObjectId
 
 from src.products_admin.repository import ProductAdminRepository
 from src.database import client
+from src.services.products_admin.replication.replicate_products import (
+    replicate_single_updated_product,
+    replicate_updated_variations,
+    replicate_created_variations,
+)
 from src.products_admin.utils import form_data_to_update, remove_product_attrs, get_var_theme_field_codes
 from src.services.products_admin.image_operation_manager import ImageOperationManager
 from src.services.products_admin.product_builder import ProductBuilder
@@ -31,14 +36,17 @@ class ProductModifier:
 
         inserted_ids = []
         if data.get("new_variations"):
-            inserted_ids = await variation_manager.handle_variation_inserts(variations_common_data,
-                                                                            same_images, session)
+            inserted_ids, replicated_variations = await variation_manager.handle_variation_inserts(
+                variations_common_data, same_images, session)
+
+            await replicate_created_variations(replicated_variations)
 
         field_codes = await get_var_theme_field_codes(variations_common_data.get("variation_theme", {}))
         # remove parent's attributes
         variations_common_data["attrs"] = await remove_product_attrs(variations_common_data["attrs"], field_codes)
         # Get Attributes that have differences
         different_attrs = different_dicts(variations_common_data["attrs"], product_before_update.get("attrs", []))
+        # update all variations
         updated_variation_ids = await variation_manager.handle_variation_updates(
             data.get("old_variations", []),
             {
@@ -51,10 +59,13 @@ class ProductModifier:
             inserted_ids,
             session
         )
+        # replicate variations
+        await replicate_updated_variations(data.get("old_variations", []))
+
         return updated_variation_ids, inserted_ids
 
     async def update_product(self, _id: ObjectId, data: dict,
-                              parent: bool) -> dict[str, Union[ObjectId, List[ObjectId]]]:
+                             parent: bool) -> dict[str, Union[ObjectId, List[ObjectId]]]:
         """
         Updates product(s) in db
         :param _id: Product identifier.
@@ -83,6 +94,7 @@ class ProductModifier:
                     return {"product_id": _id, "updated_variation_ids": updated_ids,
                             "inserted_variation_ids": inserted_ids}
 
+        # update product images
         update_linked_products = (not product_before_update.get("same_images", False)
                                   and product_before_update.get("parent_id") is not None)
 
@@ -90,5 +102,7 @@ class ProductModifier:
         image_operation_manager = ImageOperationManager(_id if source_product_id is None else source_product_id,
                                                         images, data.get("image_ops", {}), self.product_repo)
         await image_operation_manager.update_images_one_product(update_linked_products, another_process=True)
+        # replicate an updated product
+        await replicate_single_updated_product({"_id": _id, **data_to_update})
 
         return {"product_id": _id, "updated_variation_ids": None, "inserted_variation_ids": None}
