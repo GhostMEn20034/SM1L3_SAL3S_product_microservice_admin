@@ -6,6 +6,12 @@ from pymongo.operations import UpdateOne
 from src.database import db
 from src.settings import ATLAS_SEARCH_INDEX_NAME
 from src.repositories.product_repository_base import ProductRepositoryBase
+from src.aggregation_queries.products_admin.product_details import get_variations_lookup_pipeline, get_product_detail
+from src.aggregation_queries.products_admin.product_list import (
+    get_product_list_pipeline,
+    get_search_products_pipeline_stage,
+    get_search_products_main_pipeline,
+)
 
 
 class ProductAdminRepository(ProductRepositoryBase):
@@ -66,98 +72,9 @@ class ProductAdminRepository(ProductRepositoryBase):
         Returns product details and its variations if they are present.
         """
         # Pipeline that executes on product variations join
-        variations_lookup_pipeline = [
-            {
-                "$addFields": {
-                    # Get all field codes from variation theme
-                    "field_codes": {
-                        "$reduce":
-                            {
-                                "input": "$variation_theme.options",
-                                "initialValue": [],
-                                "in": {
-                                    "$concatArrays": ["$$value", "$$this.field_codes"]
-                                }
-                            }
-
-                    },
-                }
-            },
-            {
-                "$addFields": {
-                    # Filter attributes by attribute code. Attribute code should in field_codes array
-                    "attrs": {
-                        "$filter": {
-                            "input": "$attrs",
-                            "as": "attr",
-                            "cond": {
-                                "$in": ["$$attr.code", "$field_codes"]
-                            }
-                        }
-                    },
-                }
-            },
-            {
-                "$project": {
-                    "extra_attrs": 0,
-                    "parent_id": 0,
-                    "category": 0,
-                    "variation_theme": 0,
-                    "for_sale": 0,
-                    "same_images": 0,
-                    "is_filterable": 0,
-                    "field_codes": 0,
-                }
-            },
-            {
-                "$sort": {"price": 1}
-            }
-        ]
-
+        variations_lookup_pipeline = get_variations_lookup_pipeline()
         # Main aggregation pipeline
-        pipeline = [
-            # Match product with the specified id
-            {
-                "$match": {
-                    "_id": product_id
-                }
-            },
-            # Join product variations
-            {
-                "$lookup": {
-                    "from": "products",
-                    "localField": "_id",
-                    "foreignField": "parent_id",
-                    "pipeline": variations_lookup_pipeline,  # execute pipeline for each joined variation
-                    "as": "variations",
-                }
-            },
-            {
-                "$project": {
-                    "parent_id": 0,
-                }
-            },
-            {
-                "$addFields": {
-                    # Include variations to the output only if the product is the parent.
-                    "variations": {
-                        "$cond": {
-                            "if": {"$eq": ["$parent", True]},
-                            "then": "$variations",
-                            "else": "$$REMOVE"
-                        }
-                    },
-                    # get all attribute codes
-                    "attr_codes": {
-                        "$map": {
-                            "input": "$attrs",
-                            "as": "attr",
-                            "in": "$$attr.code"
-                        }
-                    },
-                }
-            }
-        ]
+        pipeline = get_product_detail(product_id, variations_lookup_pipeline)
 
         product = await db.products.aggregate(pipeline=pipeline).to_list(length=None)
         return product[0] if product else {}
@@ -177,76 +94,7 @@ class ProductAdminRepository(ProductRepositoryBase):
             "for_sale": 1,
             "parent": 1
         }
-
-        pipeline = [
-            {
-                # Match the documents that have either parent: True or parent_id: null
-                "$match": {
-                    "$or": [
-                        {"parent": True},
-                        {"parent_id": None}
-                    ]
-                }
-            },
-            {
-                # Process a multiple pipelines within a single stage on the same set of data
-                "$facet": {
-                    # List of products
-                    "items": [
-                        {
-                            # Lookup the documents that have the same parent_id as the _id of the parent document
-                            "$lookup": {
-                                "from": "products",
-                                "localField": "_id",
-                                "foreignField": "parent_id",
-                                "pipeline": [
-                                    {
-                                        "$project": {
-                                            **product_projection,
-                                            # Add a tax field, for each joined product
-                                            "tax": {"$round": [{"$multiply": ["$price", "$tax_rate"]}, 2]}
-                                        }
-                                    },
-                                    {
-                                        "$sort": {"price": 1}
-                                    }
-                                ],
-                                "as": "variations"
-                            }
-                        },
-                        {
-                            "$project": {
-                                # Compute tax in amount money (Product price * tax rate)
-                                "tax": {"$round": [{"$multiply": ["$price", "$tax_rate"]}, 2]},
-                                **product_projection,
-                                "variations": 1,
-                            }
-                        },
-                        {
-                            "$skip": (page - 1) * page_size
-                        },
-                        {
-                            "$limit": page_size
-                        },
-                    ],
-                    # count of documents
-                    "total_count": [
-                        {"$count": "count"}
-                    ]
-                }
-            },
-            {
-                # Deconstruct a total_count array to a single value
-                "$unwind": "$total_count"
-            },
-            {
-                "$project": {
-                    "items": 1,
-                    # get a count of products
-                    "count": "$total_count.count"
-                }
-            }
-        ]
+        pipeline = get_product_list_pipeline(page, page_size, product_projection)
         product_list = await db.products.aggregate(pipeline=pipeline).to_list(length=None)
         return product_list[0] if product_list else {}
 
@@ -263,7 +111,6 @@ class ProductAdminRepository(ProductRepositoryBase):
         :param page_size: count of items per page.
         :return: Products, their variations and count of products.
         """
-
         if not filters:
             filters = {}
 
@@ -274,15 +121,7 @@ class ProductAdminRepository(ProductRepositoryBase):
         main_pipeline = []
         if name:
             main_pipeline.append(
-                {
-                    "$search": {
-                        "index": ATLAS_SEARCH_INDEX_NAME,
-                        "autocomplete": {
-                            "path": "name",
-                            "query": name.strip(),
-                        },
-                    }
-                },
+               get_search_products_pipeline_stage(name, ATLAS_SEARCH_INDEX_NAME)
             )
 
         product_pipeline.extend([
@@ -294,27 +133,8 @@ class ProductAdminRepository(ProductRepositoryBase):
                 "$limit": page_size
             },
         ])
-
-        main_pipeline.extend([
-            {"$match": filters},
-            {"$facet": {
-                "items": product_pipeline,
-                "total_count": [
-                    {"$count": "count"},
-                ]
-            }},
-            {
-                # Deconstruct a total_count array to a single value
-                "$unwind": "$total_count"
-            },
-            {
-                "$project": {
-                    "items": 1,
-                    # get a count of products
-                    "count": "$total_count.count"
-                }
-            }
-        ])
-
+        main_pipeline.extend(
+            get_search_products_main_pipeline(filters, product_pipeline)
+        )
         found_products = await db.products.aggregate(pipeline=main_pipeline, **kwargs).to_list(length=None)
         return found_products[0] if found_products else {}

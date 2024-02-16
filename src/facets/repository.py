@@ -2,6 +2,7 @@ from pymongo.results import InsertOneResult, UpdateResult, DeleteResult
 from typing import Optional
 
 from src.database import db
+from src.aggregation_queries.facets.facet_list import get_facet_list_pipeline
 
 
 class FacetRepository:
@@ -40,38 +41,7 @@ class FacetRepository:
             :param page - page number
             :param page_size - number of facets to return
         """
-        pipeline = [
-            {
-                "$match": {
-                    **filters
-                }
-            },
-            {
-                "$facet": {
-                    "result": [
-                        {
-                            "$project": {
-                                "values": 0,
-                                "categories": 0
-                            }
-                        },
-                        {
-                            "$skip": (page - 1) * page_size
-                        },
-                        {
-                            "$limit": page_size
-                        }
-                    ],
-                    "total_count": [
-                        {"$count": "total"}
-                    ]
-                },
-            },
-            {
-                "$unwind": "$total_count",
-            },
-        ]
-
+        pipeline = get_facet_list_pipeline(filters, page, page_size)
         facets = await db.facets.aggregate(pipeline).to_list(length=None)
         return facets[0] if facets else {}
 

@@ -7,7 +7,7 @@ from .repository import EventRepository
 from src.products_admin.service import ProductAdminService
 from .schemes.create import CreateEvent
 from .schemes.update import UpdateEvent
-from src.services.events_admin.event_validator import EventValidatorCreate
+from src.services.events_admin.event_validator import EventValidatorCreate, EventValidatorUpdate
 from src.utils import convert_decimal, is_valid_url
 from src.services.events_admin.upload_event_images import upload_event_image
 from src.services.events_admin.delete_event_images import delete_event_image
@@ -75,7 +75,12 @@ class EventAdminService:
         if not event:
             raise HTTPException(status_code=404, detail="Event not found")
 
-        # if there's an image value and it is not valid
+        event_validator = EventValidatorUpdate(data_to_update)
+        errors = await event_validator.validate()
+        if errors:
+            raise HTTPException(status_code=400, detail=errors)
+
+        # if there's an image value and it is not valid url
         if not is_valid_url(data_to_update.image) and data_to_update.image is not None:
             await upload_event_image(data_to_update.image,f"{event['_id']}_0.jpg")
 

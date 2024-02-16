@@ -13,6 +13,7 @@ from src.variaton_themes.router import router as variation_theme_router
 from src.products_admin.router import router as product_admin_router
 from src.synonyms.router import router as synonym_router
 from src.events_admin.router import router as event_admin_router
+from src.deals_admin.router import router as deal_admin_router
 
 origins = [
     "http://localhost:3001",
@@ -35,6 +36,7 @@ app.include_router(variation_theme_router)
 app.include_router(product_admin_router)
 app.include_router(synonym_router)
 app.include_router(event_admin_router)
+app.include_router(deal_admin_router)
 
 
 @app.exception_handler(RequestValidationError)

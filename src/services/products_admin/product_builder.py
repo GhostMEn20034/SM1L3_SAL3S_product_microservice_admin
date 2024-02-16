@@ -1,4 +1,5 @@
 from typing import Tuple, Optional
+from datetime import datetime
 from bson import ObjectId
 
 
@@ -20,7 +21,9 @@ class ProductBuilder:
             "is_filterable": self.product_data.get("is_filterable"),  # Are product's attributes can be used in filters?
             "category": self.product_data.get("category"),  # product category
             "attrs": self.product_data.get("attrs", []),  # main attributes
-            "extra_attrs": extra_attrs,  # extra attributes
+            "extra_attrs": extra_attrs,  # extra attributes,
+            "created_at": datetime.utcnow(),
+            "modified_at": datetime.utcnow(),
         }
         return common_data
 

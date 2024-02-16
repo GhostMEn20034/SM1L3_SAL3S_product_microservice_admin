@@ -2,6 +2,7 @@ from pymongo.results import InsertOneResult, UpdateResult, DeleteResult
 from typing import Optional
 
 from src.database import db
+from src.aggregation_queries.variation_themes.variation_theme_list import get_variation_theme_list_pipeline
 
 class VariationThemeRepository:
     """
@@ -39,33 +40,7 @@ class VariationThemeRepository:
         :param page: Number of page.
         :param page_size: Number of documents per page.
         """
-        pipeline = [
-            {
-                "$facet": {
-                    "result": [
-                        {
-                            "$project": {
-                                "_id": 1,
-                                "name": 1
-                            }
-                        },
-                        {
-                            "$skip": (page - 1) * page_size
-                        },
-                        {
-                            "$limit": page_size
-                        }
-                    ],
-                    "total_count": [
-                        {"$count": "total"}
-                    ]
-                }
-            },
-            {
-                "$unwind": "$total_count",
-            },
-        ]
-
+        pipeline = get_variation_theme_list_pipeline(page, page_size)
         variation_themes = await db.variation_themes.aggregate(pipeline).to_list(length=None)
 
         return variation_themes[0] if variation_themes else {}

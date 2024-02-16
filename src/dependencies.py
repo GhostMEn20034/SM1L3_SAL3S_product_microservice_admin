@@ -1,5 +1,7 @@
 from src.categories_admin.repository import CategoryRepository
 from src.categories_admin.service import CategoryService
+from src.deals_admin.repository import DealRepository
+from src.deals_admin.service import DealAdminService
 from src.facet_types.repository import FacetTypeRepository
 from src.facet_types.service import FacetTypeService
 from src.facets.repository import FacetRepository
@@ -53,3 +55,9 @@ async def get_event_admin_service() -> EventAdminService:
     repository = EventRepository()
     product_service = await get_product_admin_service()
     return EventAdminService(repository, product_service)
+
+async def get_deal_admin_service() -> DealAdminService:
+    deal_repository = DealRepository()
+    category_repository = CategoryRepository()
+    facet_repository = FacetRepository()
+    return DealAdminService(deal_repository, category_repository, facet_repository)

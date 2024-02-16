@@ -2,6 +2,7 @@ from typing import Optional
 from pymongo.results import InsertOneResult, UpdateResult, DeleteResult
 
 from src.database import db
+from src.aggregation_queries.synonyms.synonym_list import get_synonym_list_pipeline
 
 
 class SynonymRepository:
@@ -43,31 +44,7 @@ class SynonymRepository:
         if not filters:
             filters = {}
 
-        pipeline = [
-            {
-                "$match": {
-                    **filters
-                }
-            },
-            {
-                "$facet": {
-                    "result": [
-                        {
-                            "$skip": (page - 1) * page_size
-                        },
-                        {
-                            "$limit": page_size
-                        }
-                    ],
-                    "total_count": [
-                        {"$count": "total"}
-                    ]
-                },
-            },
-            {
-                "$unwind": "$total_count",
-            },
-        ]
+        pipeline = get_synonym_list_pipeline(page, page_size, filters)
         synonyms = await db.synonyms.aggregate(pipeline).to_list(length=None)
         return synonyms[0] if synonyms else {}
 

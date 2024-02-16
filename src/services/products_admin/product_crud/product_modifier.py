@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Union, List
 from bson import ObjectId
 
@@ -51,7 +52,8 @@ class ProductModifier:
             data.get("old_variations", []),
             {
                 "attrs": different_attrs,
-                "extra_attrs": data.get("extra_attrs")
+                "extra_attrs": data.get("extra_attrs"),
+                "modified_at": datetime.utcnow(),
             },
             same_images,
             images,
@@ -79,9 +81,9 @@ class ProductModifier:
         data_to_update["search_terms"] = [i.strip() for i in data_to_update["search_terms"]]
 
         product_before_update = await self.product_repo.find_and_update_one_product(
-            {"_id": _id}, {"$set": data_to_update},
+            {"_id": _id}, {"$set": {**data_to_update, "modified_at": datetime.utcnow()}},
             {"_id": 0, "name": 0, "price": 0, "stock": 0,
-             "discount_rate": 0, "tax_rate": 0, "max_order_qty": 0, "sku": 0, "external_id": 0},
+             "discount_rate": 0, "tax_rate": 0, "max_order_qty": 0, "sku": 0, "external_id": 0, "modified_at": 0, },
         )
         images = product_before_update.pop("images", {})
 

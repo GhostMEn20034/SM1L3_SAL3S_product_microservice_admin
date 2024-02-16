@@ -2,6 +2,7 @@ from typing import Optional
 from pymongo.results import InsertOneResult, UpdateResult, DeleteResult
 
 from src.database import db
+from src.aggregation_queries.events_admin.event_list import get_event_list_pipeline
 
 
 class EventRepository:
@@ -38,26 +39,7 @@ class EventRepository:
         :param page - page number
         :param page_size - number of events to return
         """
-        pipeline = [
-            {
-                "$facet": {
-                    "result": [
-                        {
-                            "$skip": (page - 1) * page_size
-                        },
-                        {
-                            "$limit": page_size
-                        }
-                    ],
-                    "total_count": [
-                        {"$count": "total"}
-                    ]
-                },
-            },
-            {
-                "$unwind": "$total_count",
-            },
-        ]
+        pipeline = get_event_list_pipeline(page, page_size)
         events = await db.events.aggregate(pipeline).to_list(length=None)
         return events[0] if events else {}
 

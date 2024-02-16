@@ -2,6 +2,7 @@ from pymongo.results import InsertOneResult, UpdateResult, DeleteResult
 from typing import Optional
 
 from src.database import db
+from src.aggregation_queries.categories_admin.category_list import get_category_list_pipeline
 
 
 class CategoryRepository:
@@ -39,50 +40,7 @@ class CategoryRepository:
             :param page_size - number of categories to return
             :param page - page number.
         """
-        pipeline = [
-            {
-                "$facet": {
-                    "result": [
-                        {
-                            "$lookup": {
-                                "from": "categories",
-                                "localField": "parent_id",
-                                "foreignField": "_id",
-                                "as": "parent"
-                            }
-                        },
-                        {
-                            "$unwind": {"path": "$parent", "preserveNullAndEmptyArrays": True}
-                        },
-                        {
-                            "$addFields": {
-                                "parent_name": {
-                                    "$ifNull": ["$parent.name", "No parent"]
-                                }
-                            }
-                        },
-                        {
-                            "$project": {
-                                "parent": 0,
-                            }
-                        },
-                        {
-                            "$skip": (page - 1) * page_size
-                        },
-                        {
-                            "$limit": page_size
-                        }
-                    ],
-                    "total_count": [
-                        {"$count": "total"}
-                    ]
-                }
-            },
-            {
-                "$unwind": "$total_count",
-            },
-        ]
-
+        pipeline = get_category_list_pipeline(page, page_size)
         categories = await db.categories.aggregate(pipeline).to_list(length=None)
         return categories[0] if categories else {}
 
