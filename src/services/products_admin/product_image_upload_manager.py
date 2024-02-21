@@ -7,7 +7,7 @@ from src.services.upload_images import (
     upload_images_single_product,
     upload_images_many_products
 )
-from src.products_admin.repository import ProductAdminRepository
+from src.apps.products_admin.repository import ProductAdminRepository
 from src.utils import async_worker
 
 class ProductImageUploadManager:

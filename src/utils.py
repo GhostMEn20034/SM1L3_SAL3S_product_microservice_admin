@@ -5,7 +5,7 @@ from bson.decimal128 import Decimal128
 from typing import Union, List, Optional
 from pydantic import ValidationError
 
-from src.settings import ALLOWED_IMAGE_TYPE
+from src.config.settings import ALLOWED_IMAGE_TYPE
 from src.schemes.url_validator import UrlValidator
 
 async def validate_images(images: Union[str, List[str]], many: bool = False):

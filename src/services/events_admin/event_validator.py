@@ -1,5 +1,5 @@
-from src.events_admin.schemes.create import CreateEvent
-from src.events_admin.schemes.update import UpdateEvent
+from src.apps.events_admin.schemes.create import CreateEvent
+from src.apps.events_admin.schemes.update import UpdateEvent
 from src.utils import validate_images
 
 

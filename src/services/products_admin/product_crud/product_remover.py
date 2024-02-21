@@ -1,7 +1,7 @@
 from bson import ObjectId
 
-from src.settings import S3_BUCKET_NAME
-from src.products_admin.repository import ProductAdminRepository
+from src.config.settings import S3_BUCKET_NAME
+from src.apps.products_admin.repository import ProductAdminRepository
 from src.services.products_admin.image_operation_manager import ImageOperationManager
 from src.services.upload_images import delete_many_files_in_s3
 

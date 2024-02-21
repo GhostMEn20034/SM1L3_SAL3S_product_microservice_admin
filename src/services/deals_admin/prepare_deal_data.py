@@ -1,8 +1,8 @@
 from typing import Union
 
-from src.deals_admin.schemes.base import DealBase, ParentDealBase
-from src.deals_admin.schemes.create import CreateDealSchema
-from src.deals_admin.schemes.update import UpdatedDeal, UpdateDealSchema, UpdatedParentDeal
+from src.apps.deals_admin.schemes.base import DealBase, ParentDealBase
+from src.apps.deals_admin.schemes.create import CreateDealSchema
+from src.apps.deals_admin.schemes.update import UpdatedDeal, UpdateDealSchema, UpdatedParentDeal
 from src.schemes.product_filters import ProductFilters
 from src.services.product_filter_generator import ProductFilterGenerator
 

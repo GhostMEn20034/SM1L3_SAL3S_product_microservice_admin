@@ -1,10 +1,10 @@
-from src.products_admin.schemes.create import CreateProduct
-from src.products_admin.schemes.update import UpdateProduct, ExtraProductDataUpdate
+from src.apps.products_admin.schemes.create import CreateProduct
+from src.apps.products_admin.schemes.update import UpdateProduct, ExtraProductDataUpdate
 from src.services.products_admin.product_validation_helpers import (
     validate_product_images, validate_product_variations, validate_image_ops
 )
-from src.products_admin.repository import ProductAdminRepository
-from src.products_admin.utils import AttrsHandler
+from src.apps.products_admin.repository import ProductAdminRepository
+from src.apps.products_admin.utils import AttrsHandler
 
 
 class ProductValidatorBase:

@@ -1,6 +1,6 @@
 from typing import List
 from bson.objectid import ObjectId
-from src.products_admin.utils import AttrsHandler
+from src.apps.products_admin.utils import AttrsHandler
 from src.utils import validate_images, is_list_unique
 
 

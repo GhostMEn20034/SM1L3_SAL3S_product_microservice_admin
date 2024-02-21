@@ -2,9 +2,9 @@ import io
 from bson import ObjectId
 from typing import List
 
-from src.file_storage import get_s3_client
+from src.config.file_storage import get_s3_client
 from src.utils import get_image_from_base64
-from src.settings import S3_BUCKET_NAME, BUCKET_BASE_URL
+from src.config.settings import S3_BUCKET_NAME, BUCKET_BASE_URL
 
 
 async def upload_file_to_s3(key: str, bytes_io: io.BytesIO, bucket_name: str):

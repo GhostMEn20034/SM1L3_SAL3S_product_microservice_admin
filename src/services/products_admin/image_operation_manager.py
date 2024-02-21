@@ -6,8 +6,8 @@ from bson import ObjectId
 
 from src.utils import get_image_from_base64, async_worker
 from src.services.upload_images import delete_many_files_in_s3, upload_file_to_s3
-from src.settings import S3_BUCKET_NAME, BUCKET_BASE_URL
-from src.products_admin.repository import ProductAdminRepository
+from src.config.settings import S3_BUCKET_NAME, BUCKET_BASE_URL
+from src.apps.products_admin.repository import ProductAdminRepository
 
 class ImageOperationManager:
     """

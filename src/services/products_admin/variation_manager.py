@@ -2,15 +2,15 @@ from typing import List, Tuple, Optional
 from bson import ObjectId
 from pymongo.operations import UpdateOne
 
-from src.products_admin.repository import ProductAdminRepository
+from src.apps.products_admin.repository import ProductAdminRepository
 from src.services.product_query_builder import ProductQueryBuilder
 from .product_image_upload_manager import ProductImageUploadManager
 from .image_operation_manager import ImageOperationManager
 from .product_builder import ProductBuilder
-from src.products_admin.utils import get_var_theme_field_codes, remove_product_attrs
+from src.apps.products_admin.utils import get_var_theme_field_codes, remove_product_attrs
 from src.services.products_admin.replication.create_variations_replica import create_variations_replica
 from src.services.upload_images import delete_many_files_in_s3
-from src.settings import S3_BUCKET_NAME
+from src.config.settings import S3_BUCKET_NAME
 
 
 class VariationManager:

@@ -2,16 +2,8 @@ version: '3.8'
 services:
   # FastAPI App
   web:
-    environment:
-      - MONGODB_URL=${MONGODB_URL}
-      - ATLAS_SEARCH_INDEX_NAME=${ATLAS_SEARCH_INDEX_NAME}
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
-      - BUCKET_BASE_URL=${BUCKET_BASE_URL}
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      - EVENT_CHECK_INTERVAL_MINUTES=1
+    env_file:
+      - .env
     build: .
     command: uvicorn src.main:app --host 0.0.0.0 --reload
     volumes:
@@ -24,11 +16,8 @@ services:
 
   # Celery worker
   worker:
-    environment:
-      - EVENT_CHECK_INTERVAL_MINUTES=1
-      - MONGODB_URL=${MONGODB_URL}
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    env_file:
+      - .env
     build: .
     command: celery -A src.worker.celery worker --loglevel=info
     volumes:
@@ -39,10 +28,8 @@ services:
 
 # Celery beats
   beat:
-    environment:
-      - EVENT_CHECK_INTERVAL_MINUTES=1
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    env_file:
+      - .env
     build: .
     command: celery -A src.worker.celery beat -S redbeat.RedBeatScheduler --max-interval 30  --loglevel=debug
     volumes:

@@ -1,4 +1,4 @@
-from src.products_admin.schemes.get import ProductSearchFilters
+from src.apps.products_admin.schemes.get import ProductSearchFilters
 
 class ProductsFilterCreatorAdmin:
     """

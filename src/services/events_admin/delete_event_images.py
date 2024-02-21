@@ -1,6 +1,6 @@
 from urllib.parse import urlparse
 
-from src.settings import S3_BUCKET_NAME
+from src.config.settings import S3_BUCKET_NAME
 from src.services.upload_images import delete_one_file_in_s3
 
 async def delete_event_image(image_url: str):

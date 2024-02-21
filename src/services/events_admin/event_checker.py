@@ -2,9 +2,9 @@ from bson import ObjectId
 from datetime import datetime
 import pytz
 
-from src.events_admin.repository import EventRepository
-from src.products_admin.service import ProductAdminService
-from src.events_admin.schemes.base import EventStatusEnum
+from src.apps.events_admin.repository import EventRepository
+from src.apps.products_admin.service import ProductAdminService
+from src.apps.events_admin.schemes.base import EventStatusEnum
 from src.services.celery_beats_operations import delete_periodic_task
 from src.worker import logger
 

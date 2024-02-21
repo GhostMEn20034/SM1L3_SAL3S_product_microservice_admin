@@ -3,7 +3,7 @@ from pymongo.results import InsertOneResult, InsertManyResult, UpdateResult, Del
 from pymongo.operations import UpdateOne
 from pymongo import ReturnDocument
 from typing import Optional, Union
-from src.database import db
+from src.config.database import db
 from src.logger import logger
 
 

@@ -1,5 +1,5 @@
-from src.deals_admin.schemes.create import CreateDealSchema
-from src.deals_admin.schemes.update import UpdateDealSchema
+from src.apps.deals_admin.schemes.create import CreateDealSchema
+from src.apps.deals_admin.schemes.update import UpdateDealSchema
 from src.utils import validate_images, is_valid_url
 
 

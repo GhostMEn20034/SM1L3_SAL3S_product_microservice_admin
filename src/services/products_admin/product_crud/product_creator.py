@@ -1,9 +1,9 @@
 from typing import Tuple, List, Optional
 from bson import ObjectId
 
-from src.database import client
-from src.products_admin.repository import ProductAdminRepository
-from src.products_admin.utils import set_attr_non_optional, get_var_theme_field_codes, remove_product_attrs
+from src.config.database import client
+from src.apps.products_admin.repository import ProductAdminRepository
+from src.apps.products_admin.utils import set_attr_non_optional, get_var_theme_field_codes, remove_product_attrs
 from src.services.products_admin.product_builder import ProductBuilder
 from src.services.products_admin.product_image_upload_manager import ProductImageUploadManager
 from src.services.products_admin.variation_manager import VariationManager

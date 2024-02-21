@@ -1,6 +1,6 @@
 import io
 
-from src.settings import S3_BUCKET_NAME, BUCKET_BASE_URL
+from src.config.settings import S3_BUCKET_NAME, BUCKET_BASE_URL
 from src.services.upload_images import upload_file_to_s3
 from src.utils import get_image_from_base64
 

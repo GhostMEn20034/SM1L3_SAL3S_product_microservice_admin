@@ -2,14 +2,14 @@ from datetime import datetime
 from typing import Union, List
 from bson import ObjectId
 
-from src.products_admin.repository import ProductAdminRepository
-from src.database import client
+from src.apps.products_admin.repository import ProductAdminRepository
+from src.config.database import client
 from src.services.products_admin.replication.replicate_products import (
     replicate_single_updated_product,
     replicate_updated_variations,
     replicate_created_variations,
 )
-from src.products_admin.utils import form_data_to_update, remove_product_attrs, get_var_theme_field_codes
+from src.apps.products_admin.utils import form_data_to_update, remove_product_attrs, get_var_theme_field_codes
 from src.services.products_admin.image_operation_manager import ImageOperationManager
 from src.services.products_admin.product_builder import ProductBuilder
 from src.services.products_admin.variation_manager import VariationManager

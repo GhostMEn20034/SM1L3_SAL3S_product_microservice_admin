@@ -1,7 +1,7 @@
 from typing import List
 
-from src.products_admin.replication_schemes.create import ProductCreateReplicationSchema
-from src.products_admin.replication_schemes.update import (
+from src.apps.products_admin.replication_schemes.create import ProductCreateReplicationSchema
+from src.apps.products_admin.replication_schemes.update import (
     SingleProductUpdateReplicationSchema,
     ProductUpdateReplicationSchemaBase
 )
