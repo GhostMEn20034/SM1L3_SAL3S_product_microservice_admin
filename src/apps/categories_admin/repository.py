@@ -81,7 +81,7 @@ class CategoryRepository:
 
     async def delete_category(self, filters: dict, **kwargs) -> DeleteResult:
         """
-        Updates a category
+        Deletes a category
         :param filters: A query that matches the document to delete.
         :param kwargs: Other parameters for delete such as session for transaction etc.
         """

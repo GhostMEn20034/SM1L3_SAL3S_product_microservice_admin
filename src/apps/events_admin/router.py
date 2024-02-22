@@ -4,7 +4,7 @@ from src.apps.events_admin.schemes.get import EventListResponse, EventsDetailRes
 from .schemes.create import CreateEvent
 from .schemes.update import UpdateEvent
 from .service import EventAdminService
-from src.dependencies.service_dependencies import get_event_admin_service
+from src.dependencies.service_dependencies.events_admin import get_event_admin_service
 from src.schemes.py_object_id import PyObjectId
 
 router = fastapi.APIRouter(

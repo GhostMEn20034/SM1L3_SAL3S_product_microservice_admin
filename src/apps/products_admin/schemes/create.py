@@ -65,7 +65,7 @@ class CreateProduct(BaseModel):
     # List of the attributes to provide additional information
     extra_attrs: Optional[List[Attr]]
     # keywords to improve the accuracy of product searching
-    search_terms: List[constr(min_length=1)]
+    search_terms: List[constr(min_length=1, strip_whitespace=True, to_lower=True)]
     # Category to which the product belongs
     category: PyObjectId
     # determines whether product has variations

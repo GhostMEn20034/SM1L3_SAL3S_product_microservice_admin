@@ -7,7 +7,7 @@ from .schemes import get
 from .schemes import update
 from .schemes.delete import DeleteProductRequest
 from .service import ProductAdminService
-from src.dependencies.service_dependencies import get_product_admin_service
+from src.dependencies.service_dependencies.products_admin import get_product_admin_service
 
 router = fastapi.APIRouter(
     prefix="/admin/products",

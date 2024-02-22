@@ -4,7 +4,7 @@ from .schemes.get import SynonymListResponse, SynonymDetailResponse
 from .schemes.create import SynonymCreate
 from .schemes.update import SynonymUpdate
 from .service import SynonymService
-from src.dependencies.service_dependencies import get_synonym_service
+from src.dependencies.service_dependencies.synonyms import get_synonym_service
 from src.schemes.py_object_id import PyObjectId
 
 router = fastapi.APIRouter(

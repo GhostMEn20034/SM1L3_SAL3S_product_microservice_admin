@@ -4,7 +4,7 @@ from fastapi import Depends
 
 from .service import DealAdminService
 from .schemes import create, get, update
-from src.dependencies.service_dependencies import get_deal_admin_service
+from src.dependencies.service_dependencies.deals_admin import get_deal_admin_service
 from src.schemes.py_object_id import PyObjectId
 
 router = fastapi.APIRouter(

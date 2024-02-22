@@ -1,6 +1,6 @@
 from bson.objectid import ObjectId, InvalidId
 
-from src.dependencies import get_product_admin_service
+from src.dependencies.service_dependencies.products_admin import get_product_admin_service
 from src.apps.products_admin.service import ProductAdminService
 from src.apps.events_admin.repository import EventRepository
 from src.services.events_admin.event_checker import EventChecker

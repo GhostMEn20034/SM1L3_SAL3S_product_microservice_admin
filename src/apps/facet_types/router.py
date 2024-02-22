@@ -2,7 +2,7 @@ import fastapi
 from fastapi import Depends
 from typing import List
 
-from src.dependencies.service_dependencies import get_facet_type_service
+from src.dependencies.service_dependencies.facet_types import get_facet_type_service
 from .service import FacetTypeService
 from .schemes import FacetType
 

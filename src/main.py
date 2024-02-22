@@ -14,6 +14,7 @@ from src.apps.products_admin.router import router as product_admin_router
 from src.apps.synonyms.router import router as synonym_router
 from src.apps.events_admin.router import router as event_admin_router
 from src.apps.deals_admin.router import router as deal_admin_router
+from src.apps.search_terms_admin.router import router as search_terms_admin_router
 
 origins = [
     "http://localhost:3001",
@@ -37,6 +38,7 @@ app.include_router(product_admin_router)
 app.include_router(synonym_router)
 app.include_router(event_admin_router)
 app.include_router(deal_admin_router)
+app.include_router(search_terms_admin_router)
 
 
 @app.exception_handler(RequestValidationError)

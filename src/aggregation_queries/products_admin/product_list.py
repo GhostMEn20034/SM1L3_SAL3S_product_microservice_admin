@@ -29,7 +29,7 @@ def get_product_list_pipeline(page: int, page_size: int, product_projection: dic
                                     }
                                 },
                                 {
-                                    "$sort": {"price": 1}
+                                    "$sort": {"created_at": 1, "price": 1}
                                 }
                             ],
                             "as": "variations"
@@ -49,6 +49,9 @@ def get_product_list_pipeline(page: int, page_size: int, product_projection: dic
                     {
                         "$limit": page_size
                     },
+                    {
+                        "$sort": {"created_at": 1}
+                    }
                 ],
                 # count of documents
                 "total_count": [

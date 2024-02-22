@@ -10,7 +10,7 @@ from .schemes import (
 from src.schemes.py_object_id import PyObjectId
 from .utils import FacetFiltersHandler
 from .service import FacetService
-from src.dependencies.service_dependencies import get_facet_service
+from src.dependencies.service_dependencies.facets import get_facet_service
 
 router = fastapi.APIRouter(
     prefix='/admin/facets',

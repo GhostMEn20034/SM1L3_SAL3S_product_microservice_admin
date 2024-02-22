@@ -74,7 +74,7 @@ class UpdateProduct(BaseModel):
     # List of the attributes to provide additional information
     extra_attrs: Optional[List[Attr]]
     # keywords to improve the accuracy of product searching
-    search_terms: List[constr(min_length=1)]
+    search_terms: List[constr(min_length=1, strip_whitespace=True, to_lower=True)]
     # Boolean value, that determines whether product for sale
     for_sale: Optional[bool]
     # Determines whether product's attributes can be used in filters
