@@ -76,6 +76,24 @@ def convert_decimal(dict_item):
 
     return dict_item
 
+def convert_type(dict_item, source_type, target_type):
+    # This function iterates a dictionary looking for values of source_type and converts them to target_type
+    # Embedded dictionaries and lists are called recursively.
+    if dict_item is None: return None
+
+    for k, v in list(dict_item.items()):
+        if isinstance(v, dict):
+            convert_type(v, source_type, target_type)
+        elif isinstance(v, list):
+            for l in v:
+                if not isinstance(l, dict):
+                    continue
+                convert_type(l, source_type, target_type)
+        elif isinstance(v, source_type):
+            dict_item[k] = target_type(v)
+
+    return dict_item
+
 def is_list_unique(input_list: List) -> Optional[int]:
     duplicate_index = None
     for i in range(len(input_list)):

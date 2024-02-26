@@ -4,6 +4,10 @@ from src.config.settings import S3_BUCKET_NAME
 from src.apps.products_admin.repository import ProductAdminRepository
 from src.services.products_admin.image_operation_manager import ImageOperationManager
 from src.services.upload_images import delete_many_files_in_s3
+from src.services.products_admin.replication.replicate_products import (
+    replicate_single_product_delete,
+    replicate_variations_delete
+)
 
 
 class ProductRemover:
@@ -61,12 +65,20 @@ class ProductRemover:
             deleted_products = await self.product_repo.delete_many_products(
                 {"$or": [{"_id": product_data.get("_id")}, {"parent_id": product_data.get("_id")}]}
             )
+            await replicate_variations_delete(
+                {
+                    "product_ids": [product_data.get("_id"), ],
+                    "parent_ids": [product_data.get("_id"), ]
+                }
+            )
             return deleted_products.deleted_count
 
         if not same_images and product_data.get("images", {}).get("sourceProductId") is None:
             await self.delete_images_one_product(product_data.get("images", {}))
 
         deleted_product = await self.product_repo.delete_one_product({"_id": product_data.get("_id")})
+        await replicate_single_product_delete(product_data.get("_id"))
+
         return deleted_product.deleted_count
 
     async def delete_many_products(self, products: list[dict]) -> int:
@@ -97,5 +109,10 @@ class ProductRemover:
                 {"_id": {"$in": products_ids_to_delete}}, {"parent_id": {"$in": parent_ids}}]
             }
         )
-
+        await replicate_variations_delete(
+            {
+                "product_ids": products_ids_to_delete,
+                "parent_ids": parent_ids,
+            }
+        )
         return deleted_products.deleted_count

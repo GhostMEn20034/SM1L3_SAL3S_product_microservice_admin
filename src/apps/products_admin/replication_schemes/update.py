@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, constr, conint, condecimal, Field
 
 from src.schemes.py_object_id import PyObjectId
@@ -9,7 +9,7 @@ class ProductUpdateReplicationSchemaBase(BaseModel):
     """
     Represents replicated data (for other microservices) of updated product
     """
-    object_id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
+    object_id: PyObjectId = Field(alias="_id")
     name: constr(min_length=1)
     price: condecimal(ge=Decimal('0.00'), decimal_places=2)
     discount_rate: Optional[condecimal(ge=Decimal('0.00'), decimal_places=2, max_digits=3)]
@@ -22,3 +22,8 @@ class ProductUpdateReplicationSchemaBase(BaseModel):
 class SingleProductUpdateReplicationSchema(ProductUpdateReplicationSchemaBase):
     """Represents replicated data (for other microservices) of the updated single product"""
     for_sale: bool
+
+
+class ProductIdsToDiscountsMapping(BaseModel):
+    product_ids: List[PyObjectId]
+    discounts: Optional[List[condecimal(max_digits=3, decimal_places=2, ge=Decimal('0'), le=Decimal('1'))]]

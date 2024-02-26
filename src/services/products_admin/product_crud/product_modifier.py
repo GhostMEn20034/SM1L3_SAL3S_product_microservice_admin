@@ -1,3 +1,4 @@
+import copy
 from datetime import datetime
 from typing import Union, List
 from bson import ObjectId
@@ -8,6 +9,7 @@ from src.services.products_admin.replication.replicate_products import (
     replicate_single_updated_product,
     replicate_updated_variations,
     replicate_created_variations,
+    replicate_variations_delete,
 )
 from src.apps.products_admin.utils import form_data_to_update, remove_product_attrs, get_var_theme_field_codes
 from src.services.products_admin.image_operation_manager import ImageOperationManager
@@ -35,6 +37,7 @@ class ProductModifier:
         variation_manager = VariationManager(parent_id, self.product_repo, ProductBuilder(variations_common_data))
         if data.get("variations_to_delete", []):
             await variation_manager.delete_variations(data["variations_to_delete"])
+            await replicate_variations_delete({"product_ids": data["variations_to_delete"]})
 
         inserted_ids = []
         if data.get("new_variations"):
@@ -50,7 +53,7 @@ class ProductModifier:
         different_attrs = different_dicts(variations_common_data["attrs"], product_before_update.get("attrs", []))
         # update all variations
         updated_variation_ids = await variation_manager.handle_variation_updates(
-            data.get("old_variations", []),
+            copy.deepcopy(data.get("old_variations", [])),
             {
                 "attrs": different_attrs,
                 "extra_attrs": data.get("extra_attrs"),

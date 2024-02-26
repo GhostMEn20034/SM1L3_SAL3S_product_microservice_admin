@@ -19,6 +19,7 @@ from src.services.products_admin.product_crud.product_creator import ProductCrea
 from src.services.products_admin.product_crud.product_modifier import ProductModifier
 from src.services.products_admin.product_crud.product_remover import ProductRemover
 from src.services.products_admin.filters.filter_creator import ProductsFilterCreatorAdmin
+from src.services.products_admin.replication.replicate_products import replicate_updated_discounts
 
 
 class ProductAdminService:
@@ -259,6 +260,7 @@ class ProductAdminService:
         if discounts is None:
             updated_products = await self.product_repo.update_many_products({"_id": {"$in": product_ids}},
                                                          {"$set": {"discount_rate": None}})
+            await replicate_updated_discounts(product_ids, None)
             return updated_products.modified_count
 
         if len(product_ids) != len(discounts):
@@ -272,4 +274,5 @@ class ProductAdminService:
                                                {"$set": {"discount_rate": discount}}))
 
         updated_products = await self.product_repo.update_many_products_bulk(update_operations)
+        await replicate_updated_discounts(product_ids, converted_discounts["discounts"])
         return updated_products.modified_count
