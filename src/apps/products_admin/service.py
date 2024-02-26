@@ -274,5 +274,5 @@ class ProductAdminService:
                                                {"$set": {"discount_rate": discount}}))
 
         updated_products = await self.product_repo.update_many_products_bulk(update_operations)
-        await replicate_updated_discounts(product_ids, converted_discounts["discounts"])
+        await replicate_updated_discounts(product_ids, discounts)
         return updated_products.modified_count
