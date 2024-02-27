@@ -5,10 +5,12 @@ from .services import VariationThemesService
 from . import schemes
 from src.schemes.py_object_id import PyObjectId
 from src.dependencies.service_dependencies.variation_themes import get_variation_theme_service
+from src.dependencies.user_dependencies import is_staff_user
 
 router = fastapi.APIRouter(
     prefix='/admin/variation-themes',
-    tags=['Variation themes']
+    tags=['Variation themes'],
+    dependencies=[Depends(is_staff_user)]
 )
 
 

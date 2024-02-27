@@ -8,10 +8,12 @@ from .schemes import create
 from .schemes import update
 from .schemes import delete
 from src.schemes.py_object_id import PyObjectId
+from src.dependencies.user_dependencies import is_staff_user
 
 router = fastapi.APIRouter(
     prefix="/admin/search-terms",
-    tags=["Admin-Search-Terms"]
+    tags=["Admin-Search-Terms"],
+    dependencies=[Depends(is_staff_user)]
 )
 
 

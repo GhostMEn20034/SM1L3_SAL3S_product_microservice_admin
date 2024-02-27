@@ -1,14 +1,17 @@
 import fastapi
 from typing import List
 from fastapi import Depends
+
 from .service import CategoryService
 from . import schemes
 from src.dependencies.service_dependencies.categories import get_category_service
+from src.dependencies.user_dependencies import is_staff_user
 from src.schemes.py_object_id import PyObjectId
 
 router = fastapi.APIRouter(
     prefix="/admin/categories",
-    tags=["Admin-Categories"]
+    tags=["Admin-Categories"],
+    dependencies=[Depends(is_staff_user)]
 )
 
 
