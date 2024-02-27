@@ -3,7 +3,7 @@ from fastapi.exceptions import HTTPException
 from bson import ObjectId
 
 from .repository import FacetRepository
-from src.apps.products_admin.service import ProductAdminService
+from src.apps.products.service import ProductAdminService
 
 
 class FacetService:

@@ -7,14 +7,14 @@ from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 
 from src.apps.facets.router import router as facet_router
-from src.apps.categories_admin.router import router as category_router
+from src.apps.categories.router import router as category_router
 from src.apps.facet_types.router import router as facet_type_router
 from src.apps.variaton_themes.router import router as variation_theme_router
-from src.apps.products_admin.router import router as product_admin_router
+from src.apps.products.router import router as product_admin_router
 from src.apps.synonyms.router import router as synonym_router
-from src.apps.events_admin.router import router as event_admin_router
-from src.apps.deals_admin.router import router as deal_admin_router
-from src.apps.search_terms_admin.router import router as search_terms_admin_router
+from src.apps.events.router import router as event_admin_router
+from src.apps.deals.router import router as deal_admin_router
+from src.apps.search_terms.router import router as search_terms_admin_router
 
 origins = [
     "http://localhost:3001",

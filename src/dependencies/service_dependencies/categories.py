@@ -1,5 +1,5 @@
-from src.apps.categories_admin.repository import CategoryRepository
-from src.apps.categories_admin.service import CategoryService
+from src.apps.categories.repository import CategoryRepository
+from src.apps.categories.service import CategoryService
 
 
 async def get_category_service() -> CategoryService:

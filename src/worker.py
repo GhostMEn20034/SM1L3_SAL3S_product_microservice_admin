@@ -6,7 +6,7 @@ celery = Celery(__name__)
 celery.conf.broker_url = os.getenv("CELERY_BROKER_URL")
 celery.conf.result_backend = os.getenv("CELERY_RESULT_BACKEND")
 
-celery.autodiscover_tasks(["src.services.events_admin"])
+celery.autodiscover_tasks(["src.services.events"])
 
 logger = get_task_logger(__name__)
 
