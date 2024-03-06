@@ -3,7 +3,7 @@ import json
 from jwt import decode
 from fastapi import Request, HTTPException, status
 
-from src.config.settings import USER_MICROSERVICE_KEY, USER_MICROSERVICE_BASE_URL, JWT_SIGNING_KEY
+from src.config.settings import USER_MICROSERVICE_KEY, USER_MICROSERVICE_BASE_URL, JWT_SIGNING_KEY, VERIFY_USERS_REQUESTS
 
 def is_staff_user(request: Request):
     """
@@ -21,11 +21,14 @@ def is_staff_user(request: Request):
 
     user_id = decode(token,JWT_SIGNING_KEY ,algorithms=["HS256"]).get("user_id")
 
-    user_data = requests.post(f"{USER_MICROSERVICE_BASE_URL}/api/user/check/",
-                              {"user_id": int(user_id), "microservice_key": USER_MICROSERVICE_KEY})
-    status_code = user_data.status_code
-    user_data = json.loads(user_data.content)
-    if (user_data.get("is_superuser", False) or user_data.get("is_staff", False)) and status_code == 200:
+    if VERIFY_USERS_REQUESTS:
+        user_data = requests.post(f"{USER_MICROSERVICE_BASE_URL}/api/user/check/",
+                                  {"user_id": int(user_id), "microservice_key": USER_MICROSERVICE_KEY})
+        status_code = user_data.status_code
+        user_data = json.loads(user_data.content)
+        if (user_data.get("is_superuser", False) or user_data.get("is_staff", False)) and status_code == 200:
+            return True
+    else:
         return True
 
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed to perform this action")
