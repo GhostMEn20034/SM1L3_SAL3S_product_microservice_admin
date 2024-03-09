@@ -2,7 +2,8 @@ import os
 
 # MongoDB Config
 MONGODB_URL = os.getenv("MONGODB_URL")
-ATLAS_SEARCH_INDEX_NAME = os.getenv("ATLAS_SEARCH_INDEX_NAME")
+ATLAS_SEARCH_INDEX_NAME_PRODUCTS = os.getenv("ATLAS_SEARCH_INDEX_NAME_PRODUCTS")
+ATLAS_SEARCH_INDEX_NAME_SEARCH_TERMS = os.getenv("ATLAS_SEARCH_INDEX_NAME_SEARCH_TERMS")
 
 # Image type allowed for uploading into the S3 Storage
 ALLOWED_IMAGE_TYPE = 'data:image/jpeg'

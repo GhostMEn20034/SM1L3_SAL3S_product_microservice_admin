@@ -23,7 +23,7 @@ def get_variations_lookup_pipeline() -> List[Dict]:
         },
         {
             "$addFields": {
-                # Filter attributes by attribute code. Attribute code should in field_codes array
+                # Filter attributes by attribute code. Attribute code should be in field_codes array
                 "attrs": {
                     "$filter": {
                         "input": "$attrs",

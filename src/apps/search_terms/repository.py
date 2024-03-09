@@ -38,13 +38,14 @@ class SearchTermsRepository:
 
         return search_terms
 
-    async def get_search_terms_with_document_count(self, page: int, page_size: int):
+    async def get_search_terms_with_document_count(self, page: int, page_size: int, name: str):
         """
             Returns specified number of search terms and total search term count,
-            :param page_size - number of search terms to return
-            :param page - page number.
+            :param page_size: number of search terms to return
+            :param page: page number.
+            :param name: search term name.
         """
-        pipeline = get_search_terms_list_pipeline(page, page_size)
+        pipeline = get_search_terms_list_pipeline(page, page_size, name)
         search_terms = await db.search_terms.aggregate(pipeline).to_list(length=None)
         return search_terms[0] if search_terms else {}
 
@@ -82,6 +83,16 @@ class SearchTermsRepository:
         """
         updated_search_term = await db.search_terms.update_one(filter=filters, update=data_to_update, **kwargs)
         return updated_search_term
+
+    async def update_many_search_terms(self, filters: dict, data_to_update: dict, **kwargs) -> UpdateResult:
+        """
+        Updates search terms
+        :param filters: A query that matches documents to update.
+        :param data_to_update: Changed search term data and operations on them ($set and so on).
+        :param kwargs: Other parameters for update such as session for transaction etc.
+        """
+        updated_search_terms = await db.search_terms.update_many(filter=filters, update=data_to_update, **kwargs)
+        return updated_search_terms
 
     async def delete_search_term(self, filters: dict, **kwargs) -> DeleteResult:
         """

@@ -18,10 +18,9 @@ router = fastapi.APIRouter(
 
 
 @router.get("/", response_model=get.SearchTermsListResponse)
-async def get_search_terms_list(page: int = fastapi.Query(1, ge=1),
-                                page_size: int = fastapi.Query(40, ge=0),
+async def get_search_terms_list(filters: get.SearchTermsFilters = Depends(get.SearchTermsFilters),
                                 service: SearchTermsAdminService = Depends(get_search_terms_service)):
-    return await service.search_terms_list(page, page_size)
+    return await service.search_terms_list(filters.page, filters.page_size, filters.name)
 
 
 @router.get("/{search_term_id}", response_model=get.SearchTermDetailResponse)

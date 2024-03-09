@@ -6,7 +6,7 @@ from src.apps.events.repository import EventRepository
 from src.apps.products.service import ProductAdminService
 from src.apps.events.schemes.base import EventStatusEnum
 from src.services.celery_beats_operations import delete_periodic_task
-from src.worker import logger
+from src.celery_logger import logger
 
 
 class EventChecker:

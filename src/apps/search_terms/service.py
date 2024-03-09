@@ -15,8 +15,8 @@ class SearchTermsAdminService:
     def __init__(self, search_repository: SearchTermsRepository):
         self.search_repository = search_repository
 
-    async def search_terms_list(self, page: int, page_size: int) -> Dict:
-        search_terms = await self.search_repository.get_search_terms_with_document_count(page, page_size)
+    async def search_terms_list(self, page: int, page_size: int, name: str) -> Dict:
+        search_terms = await self.search_repository.get_search_terms_with_document_count(page, page_size, name)
         if not search_terms.get("result"):
             result = {
                 "result": [],
@@ -95,3 +95,7 @@ class SearchTermsAdminService:
 
         if operations:
             await self.search_repository.update_many_search_terms_bulk(operations=operations, session=session)
+
+
+    async def reset_search_count(self):
+        await self.search_repository.update_many_search_terms({}, {"$set": {"search_count": 0}})

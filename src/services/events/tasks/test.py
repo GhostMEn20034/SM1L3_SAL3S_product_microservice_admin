@@ -1,5 +1,5 @@
 from celery import shared_task
-from src.worker import logger
+from src.celery_logger import logger
 
 
 @shared_task

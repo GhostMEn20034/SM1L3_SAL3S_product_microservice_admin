@@ -4,7 +4,7 @@ from bson import ObjectId
 from pymongo.operations import UpdateOne
 
 from src.config.database import db
-from src.config.settings import ATLAS_SEARCH_INDEX_NAME
+from src.config.settings import ATLAS_SEARCH_INDEX_NAME_PRODUCTS
 from src.repositories.product_repository_base import ProductRepositoryBase
 from src.aggregation_queries.products.product_details import get_variations_lookup_pipeline, get_product_detail
 from src.aggregation_queries.products.product_list import (
@@ -121,7 +121,7 @@ class ProductAdminRepository(ProductRepositoryBase):
         main_pipeline = []
         if name:
             main_pipeline.append(
-               get_search_products_pipeline_stage(name, ATLAS_SEARCH_INDEX_NAME)
+               get_search_products_pipeline_stage(name, ATLAS_SEARCH_INDEX_NAME_PRODUCTS)
             )
 
         product_pipeline.extend([

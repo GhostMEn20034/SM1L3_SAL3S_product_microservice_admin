@@ -3,7 +3,7 @@ from celery import current_app
 
 from redbeat import RedBeatSchedulerEntry
 from redbeat.schedules import rrule
-from src.worker import logger
+from src.celery_logger import logger
 
 def create_periodic_task(name: str, func, interval: rrule,
                          args: Optional[Union[List, Tuple]] = None,

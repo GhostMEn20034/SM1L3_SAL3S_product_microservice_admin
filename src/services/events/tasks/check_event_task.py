@@ -4,8 +4,9 @@ from src.dependencies.service_dependencies.products import get_product_service
 from src.apps.products.service import ProductAdminService
 from src.apps.events.repository import EventRepository
 from src.services.events.event_checker import EventChecker
-from src.worker import celery, logger
+from src.worker import celery
 from src.utils import async_worker
+from src.celery_logger import logger
 
 
 @celery.task(name='check_event_task')
