@@ -4,7 +4,7 @@ from typing import List
 
 from src.config.file_storage import get_s3_client
 from src.utils import get_image_from_base64
-from src.config.settings import S3_BUCKET_NAME, BUCKET_BASE_URL
+from src.config.settings import S3_BUCKET_NAME, CDN_HOST_NAME
 
 
 async def upload_file_to_s3(key: str, bytes_io: io.BytesIO, bucket_name: str):
@@ -40,7 +40,7 @@ async def upload_images_single_product(product_id: ObjectId, images: dict) -> di
     await upload_file_to_s3(main_image_name, main_image_bytes_io, S3_BUCKET_NAME)
 
     # URL of the uploaded main image
-    main_image_url = BUCKET_BASE_URL + "/" + main_image_name
+    main_image_url = CDN_HOST_NAME + "/" + main_image_name
 
     # check if there are secondary images
     if secondary_images := images.get("secondaryImages"):
@@ -54,7 +54,7 @@ async def upload_images_single_product(product_id: ObjectId, images: dict) -> di
             # upload image to the amazon s3
             await upload_file_to_s3(secondary_image_name, secondary_image_bytes_io, S3_BUCKET_NAME)
             # URL of the secondary image
-            secondary_image_url = BUCKET_BASE_URL + "/" + secondary_image_name
+            secondary_image_url = CDN_HOST_NAME + "/" + secondary_image_name
             secondary_image_urls.append(secondary_image_url)
 
     return {"product_id": product_id, "images": {

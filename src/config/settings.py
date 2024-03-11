@@ -14,7 +14,7 @@ AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 
 # Amazon S3 config
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
-BUCKET_BASE_URL = os.getenv("BUCKET_BASE_URL")
+CDN_HOST_NAME= os.getenv("CDN_HOST_NAME")
 
 # Celery config
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")

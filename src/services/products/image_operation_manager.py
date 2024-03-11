@@ -6,7 +6,7 @@ from bson import ObjectId
 
 from src.utils import get_image_from_base64, async_worker
 from src.services.upload_images import delete_many_files_in_s3, upload_file_to_s3
-from src.config.settings import S3_BUCKET_NAME, BUCKET_BASE_URL
+from src.config.settings import S3_BUCKET_NAME, CDN_HOST_NAME
 from src.apps.products.repository import ProductAdminRepository
 
 class ImageOperationManager:
@@ -67,7 +67,7 @@ class ImageOperationManager:
         image_bytes = await get_image_from_base64(new_image)
         image_bytes_io = io.BytesIO(image_bytes)
         await upload_file_to_s3(image_name, image_bytes_io, S3_BUCKET_NAME)
-        image_url = BUCKET_BASE_URL + "/" + image_name
+        image_url = CDN_HOST_NAME + "/" + image_name
         return image_url
 
     async def delete_many_images(self) -> Optional[int]:
