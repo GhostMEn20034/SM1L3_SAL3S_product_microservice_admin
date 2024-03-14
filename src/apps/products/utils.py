@@ -66,13 +66,13 @@ class AttrsHandler:
 
                 case "bivariate":
                     # if there's no value or list is empty or value is not a list or length of list is not 2
-                    if not attr.get("value") or not isinstance(attr.get("value"), list) or len(attr.get("value")) != 2:
+                    if not attr.get("value") or not isinstance(attr.get("value"), dict) or len(attr.get("value")) != 2:
                         # if attr is optional, then remove attr from an array, otherwise add error to the list of errors
                         append_error_or_delete_attr(attr, "must be bivariate", index)
 
                 case "trivariate":
                     # if there's no value or list is empty or value is not a list or length of list is not 3
-                    if not attr.get("value") or not isinstance(attr.get("value"), list) or len(attr.get("value")) != 3:
+                    if not attr.get("value") or not isinstance(attr.get("value"), dict) or len(attr.get("value")) != 3:
                         # if attr is optional, then remove attr from an array, otherwise add error to the list of errors
                         append_error_or_delete_attr(attr, "must be trivariate", index)
 
