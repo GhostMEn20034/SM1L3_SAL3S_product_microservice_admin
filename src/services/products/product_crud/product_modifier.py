@@ -28,10 +28,19 @@ class ProductModifier:
 
     async def _update_product_with_variations(self, parent_id: ObjectId, data: dict,
                                               product_before_update: dict, images: dict, session=None):
+        """
+        Updates parent product with its variations.
+        :param parent_id: Identifier of the parent product
+        :param data: New product data.
+        :param product_before_update: Product data before update
+        :param images: Images associated with parent product and its variations
+        :param session: Session object to make db operations inside of transaction.
+        """
         same_images = product_before_update.get("same_images")
 
         variations_common_data = {**product_before_update, "for_sale": True, "is_filterable": True,
                                   "variations": data.get("new_variations"),
+                                  "search_terms": data.get("search_terms", []),
                                   "attrs": data.get("attrs", []),
                                   "extra_attrs": data.get("extra_attrs", [])}
         variation_manager = VariationManager(parent_id, self.product_repo, ProductBuilder(variations_common_data))
