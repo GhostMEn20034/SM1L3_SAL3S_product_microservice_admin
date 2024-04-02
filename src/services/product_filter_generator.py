@@ -42,13 +42,13 @@ class ProductFilterGenerator:
             query_params["category"] = self.product_filters.category_id
 
         if self.product_filters.price_min:
-            query_params["price_min"] = self.product_filters.price_min
+            query_params["priceMin"] = self.product_filters.price_min
 
         if self.product_filters.price_max:
-            query_params["price_max"] = self.product_filters.price_max
+            query_params["priceMax"] = self.product_filters.price_max
 
         if self.product_filters.chosen_facets:
             encoded_facets = self.convert_chosen_facets_to_base64(self.product_filters.chosen_facets)
-            query_params["chosen_facets"] = encoded_facets
+            query_params["chosenFacets"] = encoded_facets
 
         return urlencode(query_params)
