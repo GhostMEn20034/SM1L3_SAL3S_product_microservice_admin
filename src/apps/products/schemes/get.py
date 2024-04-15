@@ -6,7 +6,7 @@ import fastapi
 from bson import ObjectId
 from pydantic import BaseModel, Field, constr, condecimal
 
-from src.apps.facets.schemes import Facet
+from src.apps.facets.schemes.get import Facet
 from src.apps.products_base.schemes.base import Product, BaseAttrs, Images, Attr
 from src.schemes.py_object_id import PyObjectId
 

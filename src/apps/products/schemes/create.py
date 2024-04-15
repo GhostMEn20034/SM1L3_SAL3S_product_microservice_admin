@@ -3,7 +3,7 @@ from typing import List, Union, Optional
 from bson import ObjectId
 
 from src.apps.categories.schemes import CategoryForChoices
-from src.apps.facets.schemes import Facet
+from src.apps.facets.schemes.get import Facet
 from src.apps.variaton_themes.schemes import VariationTheme
 from src.apps.facet_types.schemes import FacetType
 from src.apps.products_base.schemes.base import Attr, BaseAttrs, ProductVariation, VariationThemeInProduct

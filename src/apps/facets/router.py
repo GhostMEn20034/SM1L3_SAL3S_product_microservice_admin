@@ -1,12 +1,13 @@
 import fastapi
 from fastapi import Depends
-from .schemes import (
-    FacetFilters,
+from .schemes.get import (
     Facet,
     FacetList,
-    FacetUpdate,
-    FacetCreate
+    FacetFilters,
 )
+from .schemes.update import FacetUpdate
+from .schemes.create import FacetCreate
+
 from src.schemes.py_object_id import PyObjectId
 from .utils import FacetFiltersHandler
 from .service import FacetService
@@ -53,7 +54,7 @@ async def facet_detail(facet_id: PyObjectId, service: FacetService = Depends(get
 async def facet_update(facet_id: PyObjectId, data_to_update: FacetUpdate,
                        service: FacetService = Depends(get_facet_service)):
     """Updates facet"""
-    await service.update_facet(facet_id, data_to_update.dict())
+    await service.update_facet(facet_id, data_to_update)
 
 
 @router.post("/", status_code=fastapi.status.HTTP_201_CREATED)

@@ -3,6 +3,7 @@ from fastapi.exceptions import HTTPException
 from bson import ObjectId
 
 from .repository import FacetRepository
+from .schemes.update import FacetUpdate
 from src.apps.products.service import ProductAdminService
 
 
@@ -61,15 +62,21 @@ class FacetService:
         # Otherwise return facet with the given id
         return facet
 
-    async def update_facet(self, facet_id: ObjectId, data_to_update: dict) -> None:
-        facet = await self.repository.get_one_facet({"_id": facet_id}, {"_id": 1, "code": 1})
+    async def update_facet(self, facet_id: ObjectId, data_to_update: FacetUpdate) -> None:
+        facet = await self.repository.get_one_facet({"_id": facet_id},
+                                                    {"_id": 1, "code": 1, "is_range": 1})
         # if there's no facet with the specified id raise HTTP 404 Not Found
         if not facet:
             raise HTTPException(status_code=404, detail="Facet not found")
+
+        # If new value of is_range is False and old value is True
+        if not data_to_update.is_range and facet.get("is_range"):
+            data_to_update.range_values = None
+
         # Otherwise update facets
-        await self.repository.update_facet({"_id": facet_id}, {"$set": data_to_update})
+        await self.repository.update_facet({"_id": facet_id}, {"$set": data_to_update.dict()})
         await self.product_service.update_attribute_explanation(facet.get("code"),
-                                                                data_to_update.get("explanation"))
+                                                                data_to_update.explanation)
 
     async def delete_facet(self, facet_id: ObjectId) -> None:
         facet = await self.repository.get_one_facet({"_id": facet_id}, {"_id": 1})
