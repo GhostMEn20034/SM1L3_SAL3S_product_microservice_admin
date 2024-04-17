@@ -1,6 +1,6 @@
 from typing import Union, Optional
 
-from pydantic import BaseModel, Field, constr
+from pydantic import BaseModel, Field, constr, validator
 
 from src.schemes.py_object_id import PyObjectId
 
@@ -26,3 +26,9 @@ class RangeValue(BaseModel):
     ltn: Optional[Union[float, int]] # Less than value
     display_name: constr(min_length=1) # Display Name - string representation of
     # range of gteq inclusive and ltn exclusive
+
+    @validator('gteq', 'ltn', pre=True, always=True)
+    def convert_float_to_int_if_needed(cls, v):
+        if isinstance(v, float) and v.is_integer():
+            return int(v)
+        return v

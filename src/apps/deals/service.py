@@ -29,7 +29,7 @@ class DealAdminService:
         self.facet_repository = facet_repository
 
     async def get_deal_creation_essentials(self, facet_category: Optional[ObjectId] = None):
-        facet_filters = {}
+        facet_filters = {"is_range": False}
         if facet_category:
             # filter to get facets that belong to all categories or to category in "facet_category" variable
             facet_filters["categories"] = {"$in": [facet_category, "*"]}
