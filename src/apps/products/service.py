@@ -163,7 +163,7 @@ class ProductAdminService:
         # OR category is equal to product.category or equal to "*"
         facets = await self.facet_repo.get_facet_list(
             {"$or": [
-                {"code": {"$in": product.pop("attr_codes", [])}},
+                # {"code": {"$in": product.pop("attr_codes", [])}},
                 {"categories": {"$in": [product.get("category"), "*"]}}
             ]
             },

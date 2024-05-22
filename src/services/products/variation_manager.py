@@ -11,6 +11,7 @@ from src.apps.products.utils import get_var_theme_field_codes, remove_product_at
 from src.services.products.replication.create_variations_replica import create_variations_replica
 from src.services.upload_images import delete_many_files_in_s3
 from src.config.settings import S3_BUCKET_NAME
+from ...param_classes.products.handle_variation_updates_params import HandleVariationUpdatesParams
 
 
 class VariationManager:
@@ -65,11 +66,12 @@ class VariationManager:
         """
         Internal helper function to update product variations.
         :param variations: List of variations with their base attributes.
-        :param extra_data_to_update: Additional data to update variations (attrs, extra_attrs fields)
+        :param extra_data_to_update: Additional data to update variations (new attrs, old attrs, extra_attrs fields)
         :param session: session used to start the transaction.
         """
         updated_ids = []
         operations = []
+        push_operation = {}
         array_filters = None
 
         if attrs := extra_data_to_update.pop("attrs", []):
@@ -77,15 +79,31 @@ class VariationManager:
             set_operator_data, array_filters = await query_builder.build_update_variations_attrs(attrs)
             extra_data_to_update.update(set_operator_data)
 
+        if new_attrs := extra_data_to_update.pop("new_attrs", []):
+            push_operation.update(
+                {"attrs": {
+                    "$each": new_attrs,
+                }},
+        )
+
         for variation in variations:
             variation_id = variation.pop("_id")
             if variation_id:
-                operation = UpdateOne(
+                set_attrs_operation = UpdateOne(
                     {"_id": variation_id, "parent_id": self.parent_id},
-                    {"$set": {**variation, **extra_data_to_update}},
+                    {
+                        "$set": {**variation, **extra_data_to_update},
+                    },
                     array_filters=array_filters
                 )
-                operations.append(operation)
+                operations.append(set_attrs_operation)
+                if push_operation:
+                    push_attrs_operation = UpdateOne(
+                        {"_id": variation_id, "parent_id": self.parent_id},
+                        {"$push": push_operation}
+                    )
+                    operations.append(push_attrs_operation)
+
                 updated_ids.append(variation_id)
 
         if operations:
@@ -114,18 +132,20 @@ class VariationManager:
             await self.upload_variation_images(False, {}, inserted_ids, variation_images)
         return inserted_ids, replicated_variations
 
-    async def handle_variation_updates(self, old_variations: List[dict], extra_data_to_update: dict, same_images: bool,
-                                       images: dict, image_ops: dict, inserted_ids: List[ObjectId], session=None):
+    async def handle_variation_updates(self, params: HandleVariationUpdatesParams):
         """
         Handles updating variations in DB
         """
-        updated_variation_ids = await self.update_variations(old_variations, extra_data_to_update, session)
-        image_operation_manager = ImageOperationManager(self.parent_id, images,
-                                                        image_ops,
-                                                        self.product_repo)
-        if same_images:
+        updated_variation_ids = await self.update_variations(
+            params.old_variations,
+            params.extra_data_to_update,
+            params.session
+        )
+        image_operation_manager = ImageOperationManager(self.parent_id, params.images,
+                                                        params.image_ops, self.product_repo)
+        if params.same_images:
             await image_operation_manager.update_images_multiple_products([*updated_variation_ids,
-                                                                           *inserted_ids],
+                                                                           *params.inserted_ids],
                                                                           another_process=True)
         return updated_variation_ids
 

@@ -134,3 +134,18 @@ async def get_var_theme_field_codes(variation_theme: dict):
         field_codes.extend(option.get("field_codes", []))
 
     return field_codes
+
+
+def get_new_attrs(attrs: List[dict]) -> List[dict]:
+    """
+    Returns new attributes and set attr[optional] to False.
+    """
+    new_attrs = []
+    for attr in attrs:
+        # If attribute.optional = True, it means that it's a new attribute.
+        # That's because on product create we set all attributes.optional to False
+        if attr.get("optional", False):
+            attr["optional"] = False
+            new_attrs.append(attr)
+
+    return new_attrs

@@ -21,3 +21,12 @@ class CreateDealSchema(ParentDealBase):
                 raise ValueError("Maximum price must be greater than Minimum price")
 
         return v
+
+    @validator('button_text')
+    def validate_button_text(cls, v, values):
+        if v is None and values["is_parent"]:
+            return "Show more"
+        elif v is None and not values["is_parent"]:
+            return "Shop now"
+        else:
+            return v

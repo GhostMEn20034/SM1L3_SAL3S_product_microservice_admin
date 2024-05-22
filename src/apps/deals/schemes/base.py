@@ -20,6 +20,8 @@ class ParentDealBase(BaseModel):
     is_visible: bool = False
     is_parent: bool
     parent_id: Optional[PyObjectId]
+    description: Optional[str]
+    button_text: constr(min_length=1)
 
     @validator('parent_id')
     def validate_parent_id(cls, v, values):
@@ -27,6 +29,15 @@ class ParentDealBase(BaseModel):
             raise ValueError("If a Deal is a parent, then parent_id must be None")
 
         return v
+
+    @validator('button_text')
+    def validate_button_text(cls, v, values):
+        if v is None and values["is_parent"]:
+            return "Show more"
+        elif v is None and not values["is_parent"]:
+            return "Shop now"
+        else:
+            return v
 
 class DealBase(ParentDealBase):
     query: Optional[constr(min_length=1, strip_whitespace=True)]
@@ -41,7 +52,6 @@ class ParentDeal(ParentDealBase):
     image: AnyHttpUrl
     created_at: datetime
     modified_at: datetime
-
 
 class Deal(ParentDeal, DealBase):
     query_string: str

@@ -11,12 +11,14 @@ from src.services.products.replication.replicate_products import (
     replicate_created_variations,
     replicate_variations_delete,
 )
-from src.apps.products.utils import form_data_to_update, remove_product_attrs, get_var_theme_field_codes
+from src.apps.products.utils import form_data_to_update, remove_product_attrs, get_var_theme_field_codes, get_new_attrs
 from src.services.products.image_operation_manager import ImageOperationManager
 from src.services.products.product_builder import ProductBuilder
 from src.services.products.variation_manager import VariationManager
 from src.utils import different_dicts
 from src.services.search_terms.replicate_search_terms import replicate_search_terms
+from src.param_classes.products.update_many_products_params import UpdateManyProductsParams
+from src.param_classes.products.handle_variation_updates_params import HandleVariationUpdatesParams
 
 
 class ProductModifier:
@@ -26,32 +28,26 @@ class ProductModifier:
     def __init__(self, product_repo: ProductAdminRepository):
         self.product_repo = product_repo
 
-    async def _update_product_with_variations(self, parent_id: ObjectId, data: dict,
-                                              product_before_update: dict, images: dict, session=None):
+    async def _update_product_with_variations(self, params: UpdateManyProductsParams):
         """
         Updates parent product with its variations.
-        :param parent_id: Identifier of the parent product
-        :param data: New product data.
-        :param product_before_update: Product data before update
-        :param images: Images associated with parent product and its variations
-        :param session: Session object to make db operations inside of transaction.
         """
-        same_images = product_before_update.get("same_images")
+        same_images = params.product_before_update.get("same_images")
 
-        variations_common_data = {**product_before_update, "for_sale": True, "is_filterable": True,
-                                  "variations": data.get("new_variations"),
-                                  "search_terms": data.get("search_terms", []),
-                                  "attrs": data.get("attrs", []),
-                                  "extra_attrs": data.get("extra_attrs", [])}
-        variation_manager = VariationManager(parent_id, self.product_repo, ProductBuilder(variations_common_data))
-        if data.get("variations_to_delete", []):
-            await variation_manager.delete_variations(data["variations_to_delete"])
-            await replicate_variations_delete({"product_ids": data["variations_to_delete"], "parent_ids": []})
+        variations_common_data = {**params.product_before_update, "for_sale": True, "is_filterable": True,
+                                  "variations": params.data.get("new_variations"),
+                                  "search_terms": params.data.get("search_terms", []),
+                                  "attrs": params.data.get("attrs", []),
+                                  "extra_attrs": params.data.get("extra_attrs", [])}
+        variation_manager = VariationManager(params.parent_id, self.product_repo, ProductBuilder(variations_common_data))
+        if params.data.get("variations_to_delete", []):
+            await variation_manager.delete_variations(params.data["variations_to_delete"])
+            await replicate_variations_delete({"product_ids": params.data["variations_to_delete"], "parent_ids": []})
 
         inserted_ids = []
-        if data.get("new_variations"):
+        if params.data.get("new_variations"):
             inserted_ids, replicated_variations = await variation_manager.handle_variation_inserts(
-                variations_common_data, same_images, session)
+                variations_common_data, same_images, params.session)
 
             await replicate_created_variations(replicated_variations)
 
@@ -59,23 +55,26 @@ class ProductModifier:
         # remove parent's attributes
         variations_common_data["attrs"] = await remove_product_attrs(variations_common_data["attrs"], field_codes)
         # Get Attributes that have differences
-        different_attrs = different_dicts(variations_common_data["attrs"], product_before_update.get("attrs", []))
+        different_attrs = different_dicts(variations_common_data["attrs"], params.product_before_update.get("attrs", []))
         # update all variations
-        updated_variation_ids = await variation_manager.handle_variation_updates(
-            copy.deepcopy(data.get("old_variations", [])),
-            {
+        handle_variation_updates_params = HandleVariationUpdatesParams(
+            old_variations=copy.deepcopy(params.data.get("old_variations", [])),
+            extra_data_to_update={
+                "new_attrs": params.new_attrs,
                 "attrs": different_attrs,
-                "extra_attrs": data.get("extra_attrs"),
+                "extra_attrs": params.data.get("extra_attrs"),
                 "modified_at": datetime.utcnow(),
             },
-            same_images,
-            images,
-            data.get("image_ops", {}),
-            inserted_ids,
-            session
+            same_images=same_images, images=params.images,
+            image_ops= params.data.get("image_ops", {}),
+            inserted_ids=inserted_ids,
+            session=params.session,
+        )
+        updated_variation_ids = await variation_manager.handle_variation_updates(
+           handle_variation_updates_params
         )
         # replicate variations
-        await replicate_updated_variations(data.get("old_variations", []))
+        await replicate_updated_variations(params.data.get("old_variations", []))
 
         return updated_variation_ids, inserted_ids
 
@@ -87,6 +86,7 @@ class ProductModifier:
         :param data: VALIDATED new product data
         :param parent: Whether product that will be updated is parent
         """
+        new_attrs = get_new_attrs(data.get("attrs", []))
         data_to_update = form_data_to_update(data, parent)
         # get a product in the state before modifying and update it
 
@@ -102,8 +102,13 @@ class ProductModifier:
         if parent:
             async with (await client.start_session() as session):
                 async with session.start_transaction():
+                    update_many_products_params = UpdateManyProductsParams(
+                        parent_id=_id, data=data, new_attrs=new_attrs,
+                        product_before_update=product_before_update,
+                        images=images, session=session,
+                    )
                     updated_ids, inserted_ids = await self._update_product_with_variations(
-                        _id, data, product_before_update, images, session
+                        update_many_products_params
                     )
                     return {"product_id": _id, "updated_variation_ids": updated_ids,
                             "inserted_variation_ids": inserted_ids}

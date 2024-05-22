@@ -14,6 +14,8 @@ class UpdateDealSchema(BaseModel):
     query: Optional[constr(min_length=1, strip_whitespace=True)]
     price_min: Optional[condecimal(decimal_places=2, gt=Decimal(0))]
     price_max: Optional[condecimal(decimal_places=2, gt=Decimal(0))]
+    description: Optional[str]
+    button_text: constr(min_length=1)
     category_id: Optional[PyObjectId]
     other_filters: Optional[List[DealFilterValues]]
 
@@ -25,7 +27,6 @@ class UpdateDealSchema(BaseModel):
 
         return v
 
-
 class UpdatedParentDeal(BaseModel):
     """
     Represents a data to update a parent deal
@@ -33,6 +34,8 @@ class UpdatedParentDeal(BaseModel):
     name: constr(min_length=1, strip_whitespace=True)
     is_visible: bool = False
     image: Optional[str]
+    description: Optional[str]
+    button_text: constr(min_length=1)
 
 
 class UpdatedDeal(UpdatedParentDeal):
