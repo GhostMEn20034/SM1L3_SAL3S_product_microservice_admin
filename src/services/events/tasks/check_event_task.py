@@ -11,7 +11,6 @@ from src.celery_logger import logger
 
 @celery.task(name='check_event_task')
 def check_event_task(event_id: str):
-
     logger.info(f"Ran periodic task event_{event_id}")
 
     try:

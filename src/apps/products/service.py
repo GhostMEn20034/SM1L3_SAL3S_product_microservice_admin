@@ -1,8 +1,7 @@
-from decimal import Decimal
 from math import ceil
-from typing import List, Dict, Union, Any, Optional
+from typing import List, Dict, Union, Any
 from pymongo.operations import UpdateOne
-from bson import ObjectId, Decimal128
+from bson import ObjectId
 from fastapi import HTTPException
 
 from src.apps.categories.repository import CategoryRepository
@@ -14,6 +13,8 @@ from .repository import ProductAdminRepository
 from .schemes.create import CreateProduct
 from .schemes.get import ProductSearchFilters
 from .schemes.update import UpdateProduct
+from src.param_classes.products.attach_to_event_params import AttachToEventParams
+from src.param_classes.products.detach_from_event_params import DetachFromEventParams
 from src.services.products.validators import ProductValidatorCreate, ProductValidatorUpdate
 from src.services.products.product_crud.product_creator import ProductCreator
 from src.services.products.product_crud.product_modifier import ProductModifier
@@ -248,31 +249,35 @@ class ProductAdminService:
             array_filters=[{"elem.code": code}])
         return updated_products.modified_count
 
-    async def set_product_discounts(self, product_ids: List[ObjectId],
-                                       discounts: Optional[List[Union[Decimal, Decimal128]]] = None):
+    async def attach_to_event(self, params: AttachToEventParams) -> int:
         """
-        Sets product discounts for the specified products
-        :param product_ids: List of product ids where the method need to update discounts
-        :param discounts: List of product discounts which the method need to apply to the products.
-        If not provided, all products listed will not have any discount.
-        :return: Count of updated products
+        Attaches products to an event and sets discounts.
         """
-        if discounts is None:
-            updated_products = await self.product_repo.update_many_products({"_id": {"$in": product_ids}},
-                                                         {"$set": {"discount_rate": None}})
-            await replicate_updated_discounts(product_ids, None)
-            return updated_products.modified_count
-
-        if len(product_ids) != len(discounts):
+        if len(params.product_ids) != len(params.discounts):
             return 0
 
-        converted_discounts = convert_decimal({"discounts": discounts})
+        converted_discounts = convert_decimal({"discounts": params.discounts})
 
         update_operations = []
-        for product_id, discount in zip(product_ids, converted_discounts["discounts"]):
+        for product_id, discount in zip(params.product_ids, converted_discounts["discounts"]):
             update_operations.append(UpdateOne({"_id": product_id},
-                                               {"$set": {"discount_rate": discount}}))
+                                               {"$set": {
+                                                   "discount_rate": discount,
+                                                   "event_id": params.event_id,
+                                               }}))
 
         updated_products = await self.product_repo.update_many_products_bulk(update_operations)
-        await replicate_updated_discounts(product_ids, discounts)
+        await replicate_updated_discounts(params.product_ids, params.discounts)
+        return updated_products.modified_count
+
+    async def detach_from_event(self, params: DetachFromEventParams) -> int:
+        """
+        Detaches products from a specific event and removes discounts.
+        """
+        updated_products = await self.product_repo.update_many_products({"event_id": params.event_id},
+                                                                        {"$set": {
+                                                                            "discount_rate": None,
+                                                                            "event_id": None,
+                                                                        }})
+        await replicate_updated_discounts(params.product_ids, None)
         return updated_products.modified_count

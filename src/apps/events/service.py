@@ -13,6 +13,7 @@ from src.services.events.upload_event_images import upload_event_image
 from src.services.events.delete_event_images import delete_event_image
 from src.services.celery_beats_operations import create_periodic_task, delete_periodic_task
 from src.config.settings import EVENT_CHECK_INTERVAL_MINUTES
+from src.param_classes.products.detach_from_event_params import DetachFromEventParams
 
 
 class EventAdminService:
@@ -106,8 +107,10 @@ class EventAdminService:
 
         await self.repository.delete_one_event({"_id": event_id})
         await delete_event_image(event["image"])
-        await self.product_service.set_product_discounts(
-            [product["_id"] for product in event["discounted_products"]],
-            None
+
+        detach_from_event_params = DetachFromEventParams(
+            product_ids=[product["_id"] for product in event["discounted_products"]],
+            event_id=event_id,
         )
+        await self.product_service.detach_from_event(detach_from_event_params)
         delete_periodic_task(f"event_{str(event_id)}")
