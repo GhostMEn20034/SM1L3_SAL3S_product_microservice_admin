@@ -10,4 +10,3 @@ class DetachFromEventParams:
     """
     def __init__(self, event_id: ObjectId, product_ids: List[ObjectId]):
         self.event_id = event_id
-        self.product_ids = product_ids

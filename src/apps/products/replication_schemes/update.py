@@ -27,3 +27,4 @@ class SingleProductUpdateReplicationSchema(ProductUpdateReplicationSchemaBase):
 class ProductIdsToDiscountsMapping(BaseModel):
     product_ids: List[PyObjectId]
     discounts: Optional[List[condecimal(max_digits=3, decimal_places=2, ge=Decimal('0'), le=Decimal('1'))]]
+    event_id: PyObjectId

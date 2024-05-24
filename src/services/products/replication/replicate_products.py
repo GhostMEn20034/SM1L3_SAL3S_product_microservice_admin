@@ -1,11 +1,14 @@
 from decimal import Decimal
-from typing import List, Dict, Optional
+from typing import List, Dict
 from bson import ObjectId
 
-from src.utils import convert_type
+from src.param_classes.products.attach_to_event_params import AttachToEventParams
+from src.param_classes.products.detach_from_event_params import DetachFromEventParams
 from .product_replication_preparer import ProductReplicationPreparer
 from src.message_broker.producer import Producer
+from src.utils import convert_type
 from src.config.settings import PRODUCT_CRUD_EXCHANGE_TOPIC_NAME
+
 
 
 async def replicate_single_created_product(product_data: Dict):
@@ -69,14 +72,20 @@ async def replicate_variations_delete(filters: dict):
     producer = Producer(exchange_name=PRODUCT_CRUD_EXCHANGE_TOPIC_NAME, exchange_type='topic')
     producer.send_message(routing_key='products.crud.delete.many', message=prepared_data)
 
-
-async def replicate_updated_discounts(product_ids: List[ObjectId], discounts: Optional[List[Decimal]]):
-    prepared_data = await ProductReplicationPreparer.prepare_data_update_product_discounts(product_ids, discounts)
+async def replicate_product_attachment_to_event(params: AttachToEventParams):
+    prepared_data = await ProductReplicationPreparer.prepare_data_update_product_discounts(params)
     prepared_data = prepared_data.dict()
 
     prepared_data["product_ids"] = [str(product_id) for product_id in prepared_data["product_ids"]]
-    if prepared_data["discounts"] is not None:
-        prepared_data["discounts"] = [str(discount) for discount in prepared_data["discounts"]]
+    prepared_data["discounts"] = [str(discount) for discount in prepared_data["discounts"]]
+    prepared_data["event_id"] = str(prepared_data["event_id"])
 
     producer = Producer(exchange_name=PRODUCT_CRUD_EXCHANGE_TOPIC_NAME, exchange_type='topic')
-    producer.send_message(routing_key='products.set.discounts', message=prepared_data)
+    producer.send_message(routing_key='products.attach_to_event', message=prepared_data)
+
+async def replicate_product_detachment_from_event(params: DetachFromEventParams):
+    prepared_data = {
+        "event_id": str(params.event_id),
+    }
+    producer = Producer(exchange_name=PRODUCT_CRUD_EXCHANGE_TOPIC_NAME, exchange_type='topic')
+    producer.send_message(routing_key='products.detach_from_event', message=prepared_data)

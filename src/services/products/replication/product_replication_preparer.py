@@ -1,6 +1,4 @@
-from decimal import Decimal
-from typing import List, Optional
-
+from typing import List
 from bson import ObjectId
 
 from src.apps.products.replication_schemes.create import ProductCreateReplicationSchema
@@ -10,6 +8,7 @@ from src.apps.products.replication_schemes.update import (
     ProductIdsToDiscountsMapping,
 )
 from src.apps.products.replication_schemes.delete import DeleteProductsSchema
+from src.param_classes.products.attach_to_event_params import AttachToEventParams
 
 from src.services.create_image_name import create_product_image_name
 
@@ -18,6 +17,7 @@ class ProductReplicationPreparer:
     """
     Responsible for preparing product data for the replication
     """
+
     @staticmethod
     async def prepare_data_of_created_single_product(product_data: dict) -> ProductCreateReplicationSchema:
         if not product_data.get("image"):
@@ -64,6 +64,7 @@ class ProductReplicationPreparer:
         return DeleteProductsSchema.parse_obj(filters)
 
     @staticmethod
-    async def prepare_data_update_product_discounts(product_ids: List[ObjectId],
-                                                    discounts: Optional[List[Decimal]]) -> ProductIdsToDiscountsMapping:
-        return ProductIdsToDiscountsMapping.parse_obj({"product_ids": product_ids, "discounts": discounts})
+    async def prepare_data_update_product_discounts(params: AttachToEventParams) -> ProductIdsToDiscountsMapping:
+        return ProductIdsToDiscountsMapping.parse_obj({"product_ids": params.product_ids,
+                                                       "discounts": params.discounts,
+                                                       "event_id": params.event_id, })

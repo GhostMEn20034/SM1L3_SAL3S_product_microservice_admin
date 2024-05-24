@@ -20,7 +20,10 @@ from src.services.products.product_crud.product_creator import ProductCreator
 from src.services.products.product_crud.product_modifier import ProductModifier
 from src.services.products.product_crud.product_remover import ProductRemover
 from src.services.products.filters.filter_creator import ProductsFilterCreatorAdmin
-from src.services.products.replication.replicate_products import replicate_updated_discounts
+from src.services.products.replication.replicate_products import (
+    replicate_product_attachment_to_event,
+    replicate_product_detachment_from_event,
+)
 
 
 class ProductAdminService:
@@ -265,9 +268,8 @@ class ProductAdminService:
                                                    "discount_rate": discount,
                                                    "event_id": params.event_id,
                                                }}))
-
         updated_products = await self.product_repo.update_many_products_bulk(update_operations)
-        await replicate_updated_discounts(params.product_ids, params.discounts)
+        await replicate_product_attachment_to_event(params)
         return updated_products.modified_count
 
     async def detach_from_event(self, params: DetachFromEventParams) -> int:
@@ -279,5 +281,5 @@ class ProductAdminService:
                                                                             "discount_rate": None,
                                                                             "event_id": None,
                                                                         }})
-        await replicate_updated_discounts(params.product_ids, None)
+        await replicate_product_detachment_from_event(params)
         return updated_products.modified_count

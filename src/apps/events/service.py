@@ -107,7 +107,6 @@ class EventAdminService:
 
         await self.repository.delete_one_event({"_id": event_id})
         await delete_event_image(event["image"])
-
         detach_from_event_params = DetachFromEventParams(
             product_ids=[product["_id"] for product in event["discounted_products"]],
             event_id=event_id,
