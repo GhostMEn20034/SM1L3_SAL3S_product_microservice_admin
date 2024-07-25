@@ -5,13 +5,11 @@ from fastapi import Depends
 from .service import DealAdminService
 from .schemes import create, get, update
 from src.dependencies.service_dependencies.deals import get_deal_service
-from src.dependencies.user_dependencies import is_staff_user
 from src.schemes.py_object_id import PyObjectId
 
 router = fastapi.APIRouter(
     prefix="/admin/deals",
     tags=["Admin-Deals"],
-    dependencies=[Depends(is_staff_user)]
 )
 
 

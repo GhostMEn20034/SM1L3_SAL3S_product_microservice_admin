@@ -5,13 +5,11 @@ from .schemes.create import SynonymCreate
 from .schemes.update import SynonymUpdate
 from .service import SynonymService
 from src.dependencies.service_dependencies.synonyms import get_synonym_service
-from src.dependencies.user_dependencies import is_staff_user
 from src.schemes.py_object_id import PyObjectId
 
 router = fastapi.APIRouter(
     prefix='/admin/synonyms',
     tags=["Synonyms"],
-    dependencies=[fastapi.Depends(is_staff_user)]
 )
 
 

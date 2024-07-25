@@ -1,4 +1,6 @@
 from collections import defaultdict
+from typing import Optional
+
 from fastapi import FastAPI
 from fastapi import status
 from fastapi.exceptions import RequestValidationError
@@ -15,12 +17,17 @@ from src.apps.synonyms.router import router as synonym_router
 from src.apps.events.router import router as event_admin_router
 from src.apps.deals.router import router as deal_admin_router
 from src.apps.search_terms.router import router as search_terms_admin_router
+from src.core.message_broker.async_consumer import AsyncConsumer
 
-origins = [
-    "http://localhost:3001",
-]
+from src.config import settings
+from src.core.queue_listener_initializers import initialize_order_processing_listener
+
+origins = settings.ALLOWED_ORIGINS
 
 app = FastAPI()
+
+# Will be initialized on app startup
+order_processing_listener: Optional[AsyncConsumer] = None
 
 app.add_middleware(
     CORSMiddleware,
@@ -56,6 +63,17 @@ async def custom_form_validation_error(_, exc):
             {"detail": "Invalid request", "errors": reformatted_message, "base_errors": True}
         ),
     )
+
+@app.on_event("startup")
+async def initialize_app():
+    global order_processing_listener
+    order_processing_listener = await initialize_order_processing_listener()  # Initialize and start the listener
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    if order_processing_listener:
+        await order_processing_listener.close()
+
 
 @app.get("/ping")
 async def ping():

@@ -283,3 +283,9 @@ class ProductAdminService:
                                                                         }})
         await replicate_product_detachment_from_event(params)
         return updated_products.modified_count
+
+    async def reserve_for_order(self, products):
+        """
+        Reserves ordered products
+        """
+        pass

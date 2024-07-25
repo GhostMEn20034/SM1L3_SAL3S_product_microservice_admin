@@ -8,12 +8,10 @@ from .schemes import update
 from .schemes.delete import DeleteProductRequest
 from .service import ProductAdminService
 from src.dependencies.service_dependencies.products import get_product_service
-from src.dependencies.user_dependencies import is_staff_user
 
 router = fastapi.APIRouter(
     prefix="/admin/products",
     tags=["Products-admin"],
-    dependencies=[Depends(is_staff_user)]
 )
 
 @router.get("/create", response_model=create.ProductCreateForm)
