@@ -9,6 +9,7 @@ from src.apps.facet_types.repository import FacetTypeRepository
 from src.apps.facets.repository import FacetRepository
 from src.utils import convert_decimal
 from src.apps.variaton_themes.repository import VariationThemeRepository
+from .replication_schemes.order_processing.base import ProductItem
 from .repository import ProductAdminRepository
 from .schemes.create import CreateProduct
 from .schemes.get import ProductSearchFilters
@@ -236,7 +237,7 @@ class ProductAdminService:
     async def delete_many_products(self, product_ids: List[ObjectId]):
         products = await self.product_repo.get_product_list(
             {"_id": {"$in": product_ids}},
-         {"parent": 1, "same_images": 1, "images": 1})
+            {"parent": 1, "same_images": 1, "images": 1})
 
         if not products:
             raise HTTPException(status_code=404, detail="Products with the specified ids are not found")
@@ -284,8 +285,38 @@ class ProductAdminService:
         await replicate_product_detachment_from_event(params)
         return updated_products.modified_count
 
-    async def reserve_for_order(self, products):
+    async def reserve_for_order(self, products: List[ProductItem]) -> int:
         """
         Reserves ordered products
         """
-        pass
+        operations = []
+
+        for product in products:
+            operation = UpdateOne(
+                {"_id": ObjectId(product["product_id"])},
+                {"$inc": {
+                    "stock": -product["quantity"]
+                }}
+            )
+            operations.append(operation)
+
+        updated_products = await self.product_repo.update_many_products_bulk(operations)
+        return updated_products.modified_count
+
+    async def release_from_order(self, products: List[ProductItem]) -> int:
+        """
+        Returns ordered products from the order reservation
+        """
+        operations = []
+
+        for product in products:
+            operation = UpdateOne(
+                {"_id": ObjectId(product["product_id"])},
+                {"$inc": {
+                    "stock": product["quantity"]
+                }}
+            )
+            operations.append(operation)
+
+        updated_products = await self.product_repo.update_many_products_bulk(operations)
+        return updated_products.modified_count

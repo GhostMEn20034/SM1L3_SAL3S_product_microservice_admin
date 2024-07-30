@@ -21,7 +21,6 @@ class AsyncProducer:
         self._exchange = await self._channel.declare_exchange(self._exchange_name, self._exchange_type)
 
     async def send_message(self, routing_key: str, message: Any) -> None:
-        print(self._exchange)
         message_body = json.dumps(message)
         await self._exchange.publish(
             aio_pika.Message(body=message_body.encode()),

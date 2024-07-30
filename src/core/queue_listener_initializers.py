@@ -1,3 +1,5 @@
+import json
+
 import aio_pika
 from aio_pika import ExchangeType
 
@@ -18,7 +20,7 @@ async def initialize_order_processing_listener() -> AsyncConsumer:
     async def callback(message: aio_pika.abc.AbstractIncomingMessage):
         async with message.process():
             logger.info(f"Received message: {message.body} ---- routing key: {message.routing_key}")
-            await handle_order_processing_messages(message.routing_key, message.body)
+            await handle_order_processing_messages(message.routing_key, json.loads(message.body))
 
     await consumer.consume(callback)
     logger.info("Started Order Processing Consumer")
